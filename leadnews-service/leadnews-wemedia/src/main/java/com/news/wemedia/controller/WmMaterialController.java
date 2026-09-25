@@ -1,6 +1,7 @@
 package com.news.wemedia.controller;
 
 import com.news.model.common.dtos.ResponseResult;
+import lombok.RequiredArgsConstructor;
 import com.news.model.wemedia.dtos.WmMaterialDto;
 import com.news.wemedia.service.WmMaterialService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,10 +10,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/material")
+@RequiredArgsConstructor
 public class WmMaterialController {
 
-    @Autowired
-    private WmMaterialService wmMaterialService;
+    private final WmMaterialService wmMaterialService;
 
     @PostMapping("/upload_picture")
     public ResponseResult uploadPicture(MultipartFile multipartFile){

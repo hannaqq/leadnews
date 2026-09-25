@@ -1,6 +1,7 @@
 package com.news.wemedia.controller;
 
 import com.news.model.common.dtos.ResponseResult;
+import lombok.RequiredArgsConstructor;
 import com.news.model.wemedia.dtos.SensitiveDto;
 import com.news.model.wemedia.pojos.WmSensitive;
 import com.news.wemedia.service.WmSensitiveService;
@@ -9,10 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/sensitive")
+@RequiredArgsConstructor
 public class WmSensitiveController {
 
-    @Autowired
-    private WmSensitiveService wmSensitiveService;
+    private final WmSensitiveService wmSensitiveService;
 
     @PostMapping("/list")
     public ResponseResult getList(@RequestBody SensitiveDto dto){

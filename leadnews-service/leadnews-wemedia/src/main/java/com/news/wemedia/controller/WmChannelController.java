@@ -1,6 +1,7 @@
 package com.news.wemedia.controller;
 
 import com.news.model.wemedia.dtos.ChannelDto;
+import lombok.RequiredArgsConstructor;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.wemedia.pojos.WmChannel;
 import com.news.wemedia.service.WmChannelService;
@@ -9,10 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/channel")
+@RequiredArgsConstructor
 public class WmChannelController {
 
-    @Autowired
-    private WmChannelService wmChannelService;
+    private final WmChannelService wmChannelService;
 
     @GetMapping("/channels")
     public ResponseResult getAll(){

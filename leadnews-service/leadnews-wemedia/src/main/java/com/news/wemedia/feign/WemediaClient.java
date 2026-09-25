@@ -1,6 +1,7 @@
 package com.news.wemedia.feign;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import com.news.apis.wemedia.IWemediaClient;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
@@ -10,10 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 public class WemediaClient implements IWemediaClient {
 
-    @Autowired
-    private WmUserService wmUserService;
+    private final WmUserService wmUserService;
 
     @GetMapping("/getOne/{id}")
     public WmUser getByUserId(@PathVariable Integer id){

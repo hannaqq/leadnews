@@ -1,6 +1,7 @@
 package com.news.user.controller;
 
 import com.news.model.user.dtos.AuthDto;
+import lombok.RequiredArgsConstructor;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.user.service.ApUserRealnameService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class ApUserRealnameController {
 
-    @Autowired
-    private ApUserRealnameService apUserRealnameService;
+    private final ApUserRealnameService apUserRealnameService;
 
     @PostMapping(value = "/list")
     public ResponseResult getList(@RequestBody AuthDto dto){

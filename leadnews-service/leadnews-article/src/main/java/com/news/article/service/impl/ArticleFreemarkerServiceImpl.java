@@ -1,6 +1,8 @@
 package com.news.article.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import com.news.article.mapper.ApArticleMapper;
 import com.news.article.service.ArticleFreemarkerService;
 import com.news.common.constants.ArticleConstants;
@@ -23,30 +25,27 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.HashMap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 @Slf4j
 @Transactional
+@RequiredArgsConstructor
 public class ArticleFreemarkerServiceImpl implements ArticleFreemarkerService {
 
-    @Autowired
-    private Configuration configuration;
+    private final Configuration configuration;
 
-    @Autowired
-    private FileStorageService fileStorageService;
+    private final FileStorageService fileStorageService;
 
-    @Autowired
-    private ApArticleMapper apArticleMapper;
+    private final ApArticleMapper apArticleMapper;
 
-    @Autowired
-    private KafkaTemplate<String,String> kafkaTemplate;
+    private final KafkaTemplate<String,String> kafkaTemplate;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Async
+    @SneakyThrows
     public void buildArticleToMinIO(ApArticle apArticle, String content) {
 
         if(StringUtils.isNotBlank(content)){
@@ -72,6 +71,7 @@ public class ArticleFreemarkerServiceImpl implements ArticleFreemarkerService {
 
     }
 
+    @SneakyThrows
     private void createArticleESIndex(ApArticle apArticle, String content, String path) {
         SearchArticleVo searchArticleVo = new SearchArticleVo();
         BeanUtils.copyProperties(apArticle, searchArticleVo);

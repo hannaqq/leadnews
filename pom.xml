@@ -16,7 +16,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.15</version>
+		<version>3.2.5</version>
 		<relativePath/>
 	</parent>
 	<groupId>com.news</groupId>
@@ -24,7 +24,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>leadnews</name>
 	<properties>
-		<java.version>11</java.version>
+		<java.version>17</java.version>
 		<spring.boot.version>3.2.5</spring.boot.version>
 		<spring.cloud.version>2023.0.1</spring.cloud.version>
 		<mysql.version>8.0.33</mysql.version>

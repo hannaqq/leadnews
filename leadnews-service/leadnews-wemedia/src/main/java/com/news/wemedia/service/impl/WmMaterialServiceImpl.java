@@ -1,6 +1,7 @@
 package com.news.wemedia.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.RequiredArgsConstructor;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -28,9 +29,9 @@ import java.util.UUID;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class WmMaterialServiceImpl extends ServiceImpl<WmMaterialMapper, WmMaterial> implements WmMaterialService {
-    @Autowired
-    private FileStorageService fileStorageService;
+    private final FileStorageService fileStorageService;
 
     @Override
     public ResponseResult uploadPicture(MultipartFile multipartFile) {
@@ -83,8 +84,7 @@ public class WmMaterialServiceImpl extends ServiceImpl<WmMaterialMapper, WmMater
         return responseResult;
     }
 
-    @Autowired
-    private WmNewsMaterialMapper wmNewsMaterialMapper;
+    private final WmNewsMaterialMapper wmNewsMaterialMapper;
     @Override
     public ResponseResult delPicture(Integer id) {
         WmMaterial wmMaterial = getById(id);

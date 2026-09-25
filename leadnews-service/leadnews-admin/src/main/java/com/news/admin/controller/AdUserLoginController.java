@@ -1,6 +1,7 @@
 package com.news.admin.controller;
 
 import com.news.admin.service.AdUserService;
+import lombok.RequiredArgsConstructor;
 import com.news.model.admin.dtos.AdUserDto;
 import com.news.model.common.dtos.ResponseResult;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/login")
+@RequiredArgsConstructor
 public class AdUserLoginController {
 
-    @Autowired
-    private AdUserService adUserService;
+    private final AdUserService adUserService;
 
     @PostMapping("/in")
     public ResponseResult login(@RequestBody AdUserDto dto){

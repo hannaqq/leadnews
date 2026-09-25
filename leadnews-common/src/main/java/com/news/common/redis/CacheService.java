@@ -1,6 +1,7 @@
 package com.news.common.redis;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CachingConfigurerSupport;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.*;
@@ -14,9 +15,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Component
+@RequiredArgsConstructor
 public class CacheService extends CachingConfigurerSupport {
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
 
     public StringRedisTemplate getstringRedisTemplate() {
         return this.stringRedisTemplate;
@@ -741,7 +742,7 @@ public class CacheService extends CachingConfigurerSupport {
             if (result != null && result)
                 return token;
         } finally {
-            RedisConnectionUtils.releaseConnection(conn, factory,false);
+            RedisConnectionUtils.releaseConnection(conn, factory);
         }
         return null;
     }

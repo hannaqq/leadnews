@@ -1,6 +1,7 @@
 package com.news.wemedia.controller;
 
 import com.news.model.common.dtos.ResponseResult;
+import lombok.RequiredArgsConstructor;
 import com.news.model.wemedia.dtos.NewsAuthDto;
 import com.news.model.wemedia.dtos.WmNewsDto;
 import com.news.model.wemedia.dtos.WmNewsPageReqDto;
@@ -10,9 +11,9 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/news")
+@RequiredArgsConstructor
 public class WmNewsController {
-    @Autowired
-    private WmNewsService wmNewsService;
+    private final WmNewsService wmNewsService;
 
     @GetMapping("/del_news/{id}")
     public ResponseResult delNews(@PathVariable Integer id){

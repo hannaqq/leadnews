@@ -1,6 +1,7 @@
 package com.news.article.feign;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import com.news.apis.article.IArticleClient;
 import com.news.article.mapper.ApAuthorMapper;
 import com.news.article.service.ApArticleService;
@@ -14,12 +15,11 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/article")
+@RequiredArgsConstructor
 public class ArticleClient implements IArticleClient {
-    @Autowired
-    private ApArticleService apArticleService;
+    private final ApArticleService apArticleService;
 
-    @Autowired
-    private ApAuthorMapper apAuthorMapper;
+    private final ApAuthorMapper apAuthorMapper;
 
     @PostMapping("/save")
     @Override

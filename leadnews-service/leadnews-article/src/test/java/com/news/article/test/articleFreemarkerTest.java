@@ -1,6 +1,7 @@
 package com.news.article.test;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.SneakyThrows;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.news.article.ArticleApplication;
 import com.news.article.mapper.ApArticleContentMapper;
@@ -20,6 +21,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,6 +45,7 @@ public class  articleFreemarkerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    @SneakyThrows
     public void createStaticUrlTest() throws IOException, TemplateException {
         LambdaQueryWrapper<ApArticleContent> lqw = new LambdaQueryWrapper<>();
         ApArticleContent apArticleContent = apArticleContentMapper.selectOne(lqw.eq(ApArticleContent::getArticleId, 1303156149041758210L));

@@ -1,6 +1,7 @@
 package com.news.article.controller;
 
 import com.news.article.service.ApArticleService;
+import lombok.RequiredArgsConstructor;
 import com.news.common.constants.ArticleConstants;
 import com.news.model.article.dtos.ArticleHomeDto;
 import com.news.model.article.dtos.ArticleInfoDto;
@@ -10,10 +11,10 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/article")
+@RequiredArgsConstructor
 public class ArticleHomeController {
 
-    @Autowired
-    private ApArticleService apArticleService;
+    private final ApArticleService apArticleService;
 
     @PostMapping("/load")
     public ResponseResult load(@RequestBody ArticleHomeDto dto){

@@ -1,6 +1,8 @@
 package com.news.search.listener;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import com.news.common.constants.ArticleConstants;
 import com.news.model.search.vos.SearchArticleVo;
 import lombok.extern.slf4j.Slf4j;
@@ -14,15 +16,15 @@ import java.io.IOException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class SyncArticleListener {
 
-    @Autowired
-    private ElasticsearchClient esClient;
+    private final ElasticsearchClient esClient;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = ArticleConstants.ARTICLE_ES_SYNC_TOPIC)
+    @SneakyThrows
     public void onMessage(String message) throws IOException {
         if(StringUtils.isNotBlank(message)){
 

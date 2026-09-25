@@ -1,6 +1,8 @@
 package com.news.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.news.apis.article.IArticleClient;
 import com.news.model.article.pojos.ApArticle;
@@ -23,21 +25,19 @@ import java.util.Date;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
+@RequiredArgsConstructor
 public class ApUserFollowServiceImpl extends ServiceImpl<ApUserFollowMapper,ApUserFollow> implements ApUserFollowService {
 
-    @Autowired
-    private IArticleClient iArticleClient;
+    private final IArticleClient iArticleClient;
 
-    @Autowired
-    private ApUserFanMapper apUserFanMapper;
+    private final ApUserFanMapper apUserFanMapper;
 
-    @Autowired
-    private KafkaTemplate kafkaTemplate;
+    private final KafkaTemplate kafkaTemplate;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
+    @SneakyThrows
     public ResponseResult followOrUnfollow(UserRelationDto dto) {
         ApUser user = AppThreadLocalUtil.getUser();
         if(user == null){

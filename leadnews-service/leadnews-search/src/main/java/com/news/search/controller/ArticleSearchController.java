@@ -1,6 +1,7 @@
 package com.news.search.controller;
 
 import com.news.model.common.dtos.ResponseResult;
+import lombok.RequiredArgsConstructor;
 import com.news.model.search.dtos.UserSearchDto;
 import com.news.search.service.ArticleSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,9 +14,9 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/article/search")
+@RequiredArgsConstructor
 public class ArticleSearchController {
-    @Autowired
-    private ArticleSearchService articleSearchService;
+    private final ArticleSearchService articleSearchService;
 
     @PostMapping("/search")
     public ResponseResult search(@RequestBody UserSearchDto userSearchDto) throws IOException {

@@ -1,6 +1,7 @@
 package com.news.schedule.feign;
 
 import com.news.apis.schedule.IScheduleClient;
+import lombok.RequiredArgsConstructor;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.schedule.dtos.Task;
 import com.news.schedule.service.TaskService;
@@ -8,10 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequiredArgsConstructor
 public class ScheduleClient implements IScheduleClient {
 
-    @Autowired
-    private TaskService taskService;
+    private final TaskService taskService;
 
     @PostMapping("/api/v1/task/add")
     public ResponseResult addTask(@RequestBody Task task){

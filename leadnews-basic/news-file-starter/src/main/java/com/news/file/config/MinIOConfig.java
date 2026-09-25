@@ -1,6 +1,7 @@
 package com.news.file.config;
 
 import com.news.file.service.FileStorageService;
+import lombok.RequiredArgsConstructor;
 import io.minio.MinioClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -11,10 +12,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableConfigurationProperties({MinIOConfigProperties.class})
 @ConditionalOnClass(FileStorageService.class)
+@RequiredArgsConstructor
 public class MinIOConfig {
 
-    @Autowired
-    private MinIOConfigProperties minIOConfigProperties;
+    private final MinIOConfigProperties minIOConfigProperties;
 
     @Bean
     public MinioClient buildMinioClient() {

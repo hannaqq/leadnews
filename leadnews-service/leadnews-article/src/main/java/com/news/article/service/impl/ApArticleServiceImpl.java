@@ -1,6 +1,7 @@
 package com.news.article.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.news.article.mapper.ApArticleConfigMapper;
 import com.news.article.mapper.ApArticleContentMapper;
@@ -27,10 +28,10 @@ import java.util.List;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle> implements ApArticleService {
 
-    @Autowired
-    private ApArticleMapper apArticleMapper;
+    private final ApArticleMapper apArticleMapper;
 
     private final static short MAX_PAGE_SIZE = 50;
 
@@ -63,14 +64,11 @@ public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle
         return ResponseResult.okResult(apArticleList);
     }
 
-    @Autowired
-    private ApArticleConfigMapper apArticleConfigMapper;
+    private final ApArticleConfigMapper apArticleConfigMapper;
 
-    @Autowired
-    private ApArticleContentMapper apArticleContentMapper;
+    private final ApArticleContentMapper apArticleContentMapper;
 
-    @Autowired
-    private ArticleFreemarkerService articleFreemarkerService;
+    private final ArticleFreemarkerService articleFreemarkerService;
 
     @Override
     public ResponseResult saveArticle(ArticleDto dto) {

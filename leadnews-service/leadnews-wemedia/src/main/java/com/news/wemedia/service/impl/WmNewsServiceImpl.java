@@ -1,6 +1,8 @@
 package com.news.wemedia.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -39,6 +41,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 @Service
 @Slf4j
 @Transactional
+@RequiredArgsConstructor
 public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> implements WmNewsService {
 
     @Override
@@ -71,35 +74,25 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
         return responseResult;
     }
 
-    @Autowired
-    private WmNewsMaterialMapper wmNewsMaterialMapper;
+    private final WmNewsMaterialMapper wmNewsMaterialMapper;
 
-    @Autowired
-    private WmMaterialMapper wmMaterialMapper;
+    private final WmMaterialMapper wmMaterialMapper;
 
-    @Autowired
-    private WmNewsAutoScanService wmNewsAutoScanService;
+    private final WmNewsAutoScanService wmNewsAutoScanService;
 
-    @Autowired
-    private WmNewsTaskService wmNewsTaskService;
+    private final WmNewsTaskService wmNewsTaskService;
 
-    @Autowired
-    private KafkaTemplate kafkaTemplate;
+    private final KafkaTemplate kafkaTemplate;
 
-    @Autowired
-    private WmUserMapper wmUserMapper;
+    private final WmUserMapper wmUserMapper;
 
-    @Autowired
-    private IArticleClient iArticleClient;
+    private final IArticleClient iArticleClient;
 
-    @Autowired
-    private WmChannelMapper wmChannelMapper;
+    private final WmChannelMapper wmChannelMapper;
 
-    @Autowired
-    private WmMaterialService wmMaterialService;
+    private final WmMaterialService wmMaterialService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     public ResponseResult submit(WmNewsDto dto) {
@@ -137,6 +130,7 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
     }
 
     @Override
+    @SneakyThrows
     public ResponseResult downOrUp(WmNewsDto dto) {
         if(dto.getId() == null){
             return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
@@ -302,9 +296,10 @@ public class WmNewsServiceImpl extends ServiceImpl<WmNewsMapper, WmNews> impleme
             updateById(wmNews);
         }
     }
+    @SneakyThrows
     private List<String> extractUrlInfo(String content){
         List<String> materials = new ArrayList<>();
-        List<Map> maps = objectMapper.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
+        List<Map<String, Object>> maps = objectMapper.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
         for(Map map : maps){
             if(map.get("type").equals("image")){
                 String imgUrl = (String)map.get("value");

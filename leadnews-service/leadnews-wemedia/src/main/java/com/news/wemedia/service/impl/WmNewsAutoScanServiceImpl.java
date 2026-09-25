@@ -1,6 +1,8 @@
 package com.news.wemedia.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import com.news.apis.article.IArticleClient;
 
 import com.news.file.service.FileStorageService;
@@ -24,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import jakarta.annotation.Resource;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,10 +35,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 @Service
 @Slf4j
 @Transactional
+@RequiredArgsConstructor
 public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
 
-    @Autowired
-    private WmNewsMapper wmNewsMapper;
+    private final WmNewsMapper wmNewsMapper;
+
     @Override
     @Async
     public void autoScanWmNews(Integer id){
@@ -62,8 +64,7 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
 
     }
 
-    @Autowired
-    private WmSensitiveMapper wmSensitiveMapper;
+    private final WmSensitiveMapper wmSensitiveMapper;
     private boolean handleSensitiveScan(String content,WmNews wmNews) {
         List<WmSensitive> wmSensitives = wmSensitiveMapper.selectList(Wrappers.<WmSensitive>lambdaQuery().select(WmSensitive::getSensitives));
         List<String> sensitiveList = wmSensitives.stream().map(WmSensitive::getSensitives).collect(Collectors.toList());
@@ -78,23 +79,17 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
         return true;
     }
 
-    @Resource
-    private IArticleClient iArticleClient;
+    private final IArticleClient iArticleClient;
 
-    @Autowired
-    private WmChannelMapper wmChannelMapper;
+    private final WmChannelMapper wmChannelMapper;
 
-    @Autowired
-    private WmUserMapper wmUserMapper;
+    private final WmUserMapper wmUserMapper;
 
-    @Autowired
-    private FileStorageService fileStorageService;
+    private final FileStorageService fileStorageService;
 
-    @Autowired
-    private AwsModerationService awsModerationService;
+    private final AwsModerationService awsModerationService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     private ResponseResult saveAppArticle(WmNews wmNews) {
         WmUser wmUser = wmUserMapper.selectById(wmNews.getUserId());
@@ -154,12 +149,13 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
         return flag;
     }
 
+    @SneakyThrows
     private Map<String, Object> handleTextAndImages(WmNews wmNews){
         StringBuilder stringBuilder = new StringBuilder();
         List<String> images = new ArrayList<>();
         String content = wmNews.getContent();
         if(StringUtils.isNotBlank(content)){
-            List<Map> maps = objectMapper.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
+            List<Map<String, Object>> maps = objectMapper.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
             for (Map map : maps) {
                 if(map.get("type").equals("text")){
                     stringBuilder.append(map.get("value"));

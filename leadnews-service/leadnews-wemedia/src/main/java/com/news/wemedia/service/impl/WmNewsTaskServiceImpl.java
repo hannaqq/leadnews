@@ -1,6 +1,8 @@
 package com.news.wemedia.service.impl;
 
 import com.news.apis.schedule.IScheduleClient;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.TaskTypeEnum;
 import com.news.model.schedule.dtos.Task;
@@ -19,16 +21,14 @@ import java.util.Date;
 import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class WmNewsTaskServiceImpl implements WmNewsTaskService {
 
-    @Autowired
-    private IScheduleClient iScheduleClient;
+    private final IScheduleClient iScheduleClient;
 
-    @Autowired
-    private WmNewsAutoScanService wmNewsAutoScanService;
+    private final WmNewsAutoScanService wmNewsAutoScanService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Async

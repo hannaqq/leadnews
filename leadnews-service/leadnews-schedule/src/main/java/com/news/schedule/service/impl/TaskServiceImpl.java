@@ -1,6 +1,8 @@
 package com.news.schedule.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import com.news.common.constants.ScheduleConstants;
 import com.news.common.redis.CacheService;
 import com.news.model.schedule.dtos.Task;
@@ -21,10 +23,11 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
     
     /**
@@ -73,6 +76,7 @@ public class TaskServiceImpl implements TaskService {
      * @return Task if available, null if no task ready
      */
     @Override
+    @SneakyThrows
     public Task poll(int type, int priority) {
         String key = type +"_"+priority;
         String task_json = cacheService.lRightPop(ScheduleConstants.TOPIC+key);
@@ -93,6 +97,7 @@ public class TaskServiceImpl implements TaskService {
      *
      * @param task Task to remove
      */
+    @SneakyThrows
     private void removeTaskFromCache(Task task) {
         String key = task.getTaskType() + "_" + task.getPriority();
         if(task.getExecuteTime()<=System.currentTimeMillis()){
@@ -133,8 +138,7 @@ public class TaskServiceImpl implements TaskService {
         return task;
     }
 
-    @Autowired
-    private CacheService cacheService;
+    private final CacheService cacheService;
 
     /**
      * Add task to Redis cache based on execution time window
@@ -145,6 +149,7 @@ public class TaskServiceImpl implements TaskService {
      *
      * @param task Task to cache
      */
+    @SneakyThrows
     private void addTaskToCache(Task task) {
         String key = task.getTaskType()+"_"+task.getPriority();
 
@@ -162,14 +167,11 @@ public class TaskServiceImpl implements TaskService {
 
     }
 
-    @Autowired
-    private TaskinfoMapper taskinfoMapper;
+    private final TaskinfoMapper taskinfoMapper;
 
-    @Autowired
-    private TaskinfoLogsMapper taskinfoLogsMapper;
+    private final TaskinfoLogsMapper taskinfoLogsMapper;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     private boolean addTaskToDb(Task task){
         boolean flag = false;

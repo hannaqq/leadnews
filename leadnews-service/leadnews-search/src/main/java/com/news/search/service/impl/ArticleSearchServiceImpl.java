@@ -1,6 +1,7 @@
 package com.news.search.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import lombok.RequiredArgsConstructor;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -28,13 +29,12 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ArticleSearchServiceImpl implements ArticleSearchService {
 
-    @Autowired
-    private ElasticsearchClient elasticsearchClient;
+    private final ElasticsearchClient elasticsearchClient;
 
-    @Autowired
-    private ApUserSearchService apUserSearchService;
+    private final ApUserSearchService apUserSearchService;
 
     @Override
     public ResponseResult search(UserSearchDto userSearchDto) throws IOException {

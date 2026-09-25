@@ -1,6 +1,7 @@
 package com.news.behavior.controller;
 
 import com.news.behavior.service.ApLikesBehaviorService;
+import lombok.RequiredArgsConstructor;
 import com.news.behavior.service.ApUnlikesBehaviorService;
 import com.news.model.behavior.dtos.LikesBehaviorDto;
 import com.news.model.behavior.dtos.UnLikesBehaviorDto;
@@ -13,12 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class BehaviorController {
-    @Autowired
-    private ApLikesBehaviorService apLikesBehaviorService;
+    private final ApLikesBehaviorService apLikesBehaviorService;
 
-    @Autowired
-    private ApUnlikesBehaviorService apUnlikesBehaviorService;
+    private final ApUnlikesBehaviorService apUnlikesBehaviorService;
 
     @PostMapping("/likes_behavior")
     public ResponseResult like(@RequestBody LikesBehaviorDto dto){

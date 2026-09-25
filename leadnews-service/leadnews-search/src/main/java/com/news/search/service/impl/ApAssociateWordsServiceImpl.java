@@ -1,6 +1,7 @@
 package com.news.search.service.impl;
 
 import com.news.model.common.dtos.ResponseResult;
+import lombok.RequiredArgsConstructor;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.model.search.dtos.UserSearchDto;
 import com.news.search.pojos.ApAssociateWords;
@@ -15,10 +16,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ApAssociateWordsServiceImpl implements ApAssociateWordsService {
 
-    @Autowired
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
     @Override
     public ResponseResult search(UserSearchDto dto) {

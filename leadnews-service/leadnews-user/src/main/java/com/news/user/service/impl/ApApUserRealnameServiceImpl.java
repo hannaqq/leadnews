@@ -1,5 +1,6 @@
 package com.news.user.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import lombok.RequiredArgsConstructor;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -27,16 +28,14 @@ import java.util.Date;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ApApUserRealnameServiceImpl extends ServiceImpl<ApUserRealnameMapper,ApUserRealname> implements ApUserRealnameService {
 
-    @Autowired
-    private ApUserMapper apUserMapper;
+    private final ApUserMapper apUserMapper;
 
-    @Autowired
-    private IWemediaClient iWemediaClient;
+    private final IWemediaClient iWemediaClient;
 
-    @Autowired
-    private IArticleClient iArticleClient;
+    private final IArticleClient iArticleClient;
 
     @Override
     public ResponseResult getList(AuthDto dto) {

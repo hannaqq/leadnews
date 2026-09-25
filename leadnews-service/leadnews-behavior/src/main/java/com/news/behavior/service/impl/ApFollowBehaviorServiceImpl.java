@@ -1,6 +1,7 @@
 package com.news.behavior.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
 import com.news.behavior.mapper.ApFollowBehaviorMapper;
 import com.news.behavior.service.ApBehaviorEntryService;
 import com.news.behavior.service.ApFollowBehaviorService;
@@ -14,10 +15,10 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 
 @Service
+@RequiredArgsConstructor
 public class ApFollowBehaviorServiceImpl extends ServiceImpl<ApFollowBehaviorMapper, ApFollowBehavior> implements ApFollowBehaviorService {
 
-    @Autowired
-    private ApBehaviorEntryService apBehaviorEntryService;
+    private final ApBehaviorEntryService apBehaviorEntryService;
 
 
     @Override

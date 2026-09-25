@@ -1,6 +1,7 @@
 package com.news.search.service.impl;
 
 import com.news.model.common.dtos.ResponseResult;
+import lombok.RequiredArgsConstructor;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.model.search.dtos.HistorySearchDto;
 import com.news.model.user.pojos.ApUser;
@@ -19,9 +20,9 @@ import java.util.Date;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ApUserSearchServiceImpl implements ApUserSearchService {
-    @Autowired
-    private MongoTemplate mongoTemplate;
+    private final MongoTemplate mongoTemplate;
 
     @Override
     @Async
