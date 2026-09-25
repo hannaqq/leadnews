@@ -1,0 +1,36 @@
+# Copy to config.yaml and edit before running.
+
+schedule_service:
+  base_url: "http://127.0.0.1:51701"
+  # TaskTypeEnum.NEWS_SCAN_TIME
+  task_type: 1001
+  priority: 1
+
+mysql:
+  enabled: true
+  host: "127.0.0.1"
+  port: 3306
+  user: "root"
+  password: "your_password"
+  database: "leadnews_schedule"
+
+run:
+  # Wall-clock duration of load injection (seconds)
+  duration_sec: 1800
+  # Threads creating scheduled tasks
+  schedule_workers: 15
+  # Threads issuing cancels (random tasks from the pool)
+  cancel_workers: 8
+  # Fraction of scheduled tasks that will eventually be cancelled (0.0-1.0)
+  cancel_fraction: 0.22
+  # executeTime = now + uniform(min, max) seconds
+  execute_delay_sec_min: 120
+  execute_delay_sec_max: 480
+  # Cancel is attempted at random time in [executeTime - max_before, executeTime - min_before]
+  cancel_before_execute_sec_min: 3
+  cancel_before_execute_sec_max: 120
+  # After load stops, wait for tasks to fire + poll/refresh (seconds)
+  drain_sec: 360
+
+output:
+  dir: "./output"
