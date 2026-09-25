@@ -3,17 +3,17 @@ server:
 spring:
   data:
     mongodb:
-      host: 172.0.10.2
+      host: localhost
       port: 27017
       database: leadnews-history
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
   kafka:
-    bootstrap-servers: 172.0.10.2:9092
+    bootstrap-servers: localhost:9092
     consumer:
       group-id: search
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 elasticsearch:
-  host: 172.0.10.2
+  host: localhost
   port: 9200

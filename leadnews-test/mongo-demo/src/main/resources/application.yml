@@ -1,8 +1,16 @@
 server:
   port: 9998
 spring:
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        prefer-ip-address: true
+  config:
+    import: "consul:"
   data:
     mongodb:
-      host: 172.0.10.2
+      host: localhost
       port: 27017
       database: leadnews-history

@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>leadnews-service</artifactId>
-        <groupId>com.qiao</groupId>
+        <groupId>com.news</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -22,8 +22,8 @@
             <artifactId>spring-boot-starter-freemarker</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.qiao</groupId>
-            <artifactId>qiao-file-starter</artifactId>
+            <groupId>com.news</groupId>
+            <artifactId>news-file-starter</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 

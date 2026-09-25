@@ -1,6 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  com.qiao.common.exception.ExceptionCatch,\
-  com.qiao.common.OpenApiConfig,\
-  com.qiao.common.tess4j.Tess4jClient,\
-  com.qiao.common.redis.CacheService,\
-  com.qiao.common.jackson.InitJacksonConfig

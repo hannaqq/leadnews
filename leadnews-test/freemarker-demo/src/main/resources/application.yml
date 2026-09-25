@@ -1,6 +1,14 @@
 server:
   port: 8881
 spring:
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        prefer-ip-address: true
+  config:
+    import: "consul:"
   application:
     name: test-freemarker
   freemarker:

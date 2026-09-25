@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>leadnews</artifactId>
-        <groupId>com.qiao</groupId>
+        <groupId>com.news</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -28,15 +28,15 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.qiao</groupId>
+            <groupId>com.news</groupId>
             <artifactId>leadnews-model</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.qiao</groupId>
+            <groupId>com.news</groupId>
             <artifactId>leadnews-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.qiao</groupId>
+            <groupId>com.news</groupId>
             <artifactId>leadnews-feign-api</artifactId>
         </dependency>
         <dependency>
@@ -53,12 +53,12 @@
             <artifactId>jaxb-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-consul-discovery</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-consul-config</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>

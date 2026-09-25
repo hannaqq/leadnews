@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>leadnews</artifactId>
-        <groupId>com.qiao</groupId>
+        <groupId>com.news</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -13,12 +13,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.qiao</groupId>
+            <groupId>com.news</groupId>
             <artifactId>leadnews-model</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

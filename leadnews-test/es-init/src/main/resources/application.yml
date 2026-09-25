@@ -1,6 +1,14 @@
 server:
   port: 9999
 spring:
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        prefer-ip-address: true
+  config:
+    import: "consul:"
   application:
     name: es-article
 
@@ -11,12 +19,12 @@ spring:
     password: 707161
 # 设置Mapper接口所对应的XML文件位置，如果你在Mapper接口中有自定义方法，需要进行该配置
 mybatis-plus:
-  mapper-locations: classpath*:com.qiao.admin.mapper/*.xml
+  mapper-locations: classpath*:com.news.admin.mapper/*.xml
   # 设置别名包扫描路径，通过该属性可以给包中的类注册别名
-  type-aliases-package: com.qiao.model.article.pojos
+  type-aliases-package: com.news.model.article.pojos
 
 
 #自定义elasticsearch连接配置
 elasticsearch:
-  host: 172.0.10.2
+  host: localhost
   port: 9200

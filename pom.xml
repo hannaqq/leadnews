@@ -19,22 +19,22 @@
 		<version>2.6.15</version>
 		<relativePath/>
 	</parent>
-	<groupId>com.qiao</groupId>
+	<groupId>com.news</groupId>
 	<artifactId>leadnews</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>leadnews</name>
 	<properties>
-		<spring.boot.version>2.6.15</spring.boot.version>
-		<spring.cloud.version>2021.0.8</spring.cloud.version>
+		<java.version>11</java.version>
+		<spring.boot.version>3.2.5</spring.boot.version>
+		<spring.cloud.version>2023.0.1</spring.cloud.version>
 		<mysql.version>8.0.33</mysql.version>
 		<mybatis.version>3.5.1</mybatis.version>
 		<mybatis.spring.version>2.3.0</mybatis.spring.version>
-		<mybatis.plus.version>3.5.3.1</mybatis.plus.version>
+		<mybatis.plus.version>3.5.7</mybatis.plus.version>
 		<com.alibaba.cloud>2021.0.5.0</com.alibaba.cloud>
 		<jwt.version>0.9.1</jwt.version>
-		<fastjson.version>1.2.58</fastjson.version>
 		<lombok.version>1.18.8</lombok.version>
-		<springdoc.version>1.7.0</springdoc.version>
+		<springdoc.version>2.5.0</springdoc.version>
 		<knife4j.version>4.1.0</knife4j.version>
 		<minio.version>8.5.4</minio.version>
 		<okhttp.version>4.10.0</okhttp.version>
@@ -49,7 +49,6 @@
 		<lang3.version>3.12.0</lang3.version>
 		<pagehelper.version>1.2.3</pagehelper.version>
 		<jsoup.version>1.10.2</jsoup.version>
-		<fastjson.dataformat.version>2.9.9</fastjson.dataformat.version>
 		<spring.jwt.version>1.0.9.RELEASE</spring.jwt.version>
 		<spring.boot.admin.version>2.1.6</spring.boot.admin.version>
 		<curator.version>4.2.0</curator.version>
@@ -83,22 +82,22 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>com.qiao</groupId>
+				<groupId>com.news</groupId>
 				<artifactId>leadnews-feign-api</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>com.qiao</groupId>
+				<groupId>com.news</groupId>
 				<artifactId>leadnews-common</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>com.qiao</groupId>
+				<groupId>com.news</groupId>
 				<artifactId>leadnews-model</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>com.qiao</groupId>
+				<groupId>com.news</groupId>
 				<artifactId>leadnews-utils</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -141,25 +140,11 @@
 				<artifactId>mysql-connector-j</artifactId>
 				<version>${mysql.version}</version>
 			</dependency>
-<!--			<dependency>
-				<groupId>org.mybatis</groupId>
-				<artifactId>mybatis</artifactId>
-				<version>${mybatis.version}</version>
-			</dependency>-->
-<!--			<dependency>
-				<groupId>org.mybatis.spring.boot</groupId>
-				<artifactId>mybatis-spring-boot-starter</artifactId>
-				<version>${mybatis.spring.version}</version>
-			</dependency>-->
+
 			<dependency>
 				<groupId>com.baomidou</groupId>
-				<artifactId>mybatis-plus-boot-starter</artifactId>
+				<artifactId>mybatis-plus-spring-boot3-starter</artifactId>
 				<version>${mybatis.plus.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.alibaba</groupId>
-				<artifactId>fastjson</artifactId>
-				<version>${fastjson.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.springframework.cloud</groupId>
@@ -168,14 +153,7 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-			<dependency>
-				<groupId>com.alibaba.cloud</groupId>
-				<artifactId>spring-cloud-alibaba-dependencies</artifactId>
-				<version>${com.alibaba.cloud}</version>
-
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
+			
 
 			<dependency>
 				<groupId>io.jsonwebtoken</groupId>
@@ -183,13 +161,13 @@
 				<version>${jwt.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>javax.xml.bind</groupId>
-				<artifactId>jaxb-api</artifactId>
-				<version>${javax.version}</version>
-			</dependency>
+                <groupId>jakarta.xml.bind</groupId>
+                <artifactId>jakarta.xml.bind-api</artifactId>
+                <version>4.0.2</version>
+            </dependency>
 			<dependency>
 				<groupId>org.springdoc</groupId>
-				<artifactId>springdoc-openapi-ui</artifactId>
+				<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 				<version>${springdoc.version}</version>
 			</dependency>
 			<dependency>

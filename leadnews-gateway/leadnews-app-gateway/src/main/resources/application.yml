@@ -1,5 +1,12 @@
 spring:
+  config:
+    import: "consul:"
   cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        prefer-ip-address: true
     gateway:
       globalcors:
         add-to-simple-url-handler-mapping: true

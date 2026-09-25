@@ -71,7 +71,7 @@ esac
 
 if [ -z "$JAVA_HOME" ] ; then
   if [ -r /etc/gentoo-release ] ; then
-    JAVA_HOME=$(java-com.qiao.admin.config --jre-home)
+    JAVA_HOME=$(java-com.news.admin.config --jre-home)
   fi
 fi
 

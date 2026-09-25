@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.qiao.schedule.mapper.TaskinfoMapper">
+<mapper namespace="com.news.schedule.mapper.TaskinfoMapper">
 
-    <select id="queryFutureTime" resultType="com.qiao.model.schedule.pojos.Taskinfo">
+    <select id="queryFutureTime" resultType="com.news.model.schedule.pojos.Taskinfo">
         select *
         from taskinfo
         where task_type = #{taskType}

@@ -1,6 +1,14 @@
 server:
   port: 51805
 spring:
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        prefer-ip-address: true
+  config:
+    import: "consul:"
   application:
     name: leadnews-admin
   datasource:
@@ -10,4 +18,4 @@ spring:
     password: 707161
 mybatis-plus:
   mapper-locations: classpath*:mapper/*.xml
-  type-aliases-package: com.qiao.model.admin.pojos
+  type-aliases-package: com.news.model.admin.pojos

@@ -1,9 +1,17 @@
 server:
   port: 51801
 spring:
+  config:
+    import: "consul:"
+
   application:
     name: leadnews-user
   cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        prefer-ip-address: true
     discovery:
       client:
         simple:
@@ -16,14 +24,14 @@ spring:
     username: root
     password: 707161
   kafka:
-    bootstrap-servers: 172.0.10.2:9092
+    bootstrap-servers: localhost:9092
     producer:
       retries: 10
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 mybatis-plus:
   mapper-locations: classpath*:mapper/*.xml
-  type-aliases-package: com.qiao.model.user.pojos
+  type-aliases-package: com.news.model.user.pojos
 feign:
   hystrix:
     enabled: true

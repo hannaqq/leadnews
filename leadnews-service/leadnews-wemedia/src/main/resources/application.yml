@@ -1,25 +1,33 @@
 spring:
+  config:
+    import: "consul:"
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        prefer-ip-address: true
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/leadnews_wemedia?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
     username: root
     password: 707161
   kafka:
-    bootstrap-servers: 172.0.10.2:9092
+    bootstrap-servers: localhost:9092
     producer:
       retries: 10
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 mybatis-plus:
   mapper-locations: classpath*:mapper/*.xml
-  type-aliases-package: com.qiao.model.wemedia.pojos
+  type-aliases-package: com.news.model.wemedia.pojos
 
 minio:
   accessKey: minio
   secretKey: minio123
   bucket: leadnews
-  endpoint: http://172.0.10.2:9000
-  readPath: http://172.0.10.2:9000
+  endpoint: http://localhost:9000
+  readPath: http://localhost:9000
 
 feign:
   hystrix:
@@ -30,6 +38,3 @@ feign:
         connectTimeout: 20000
         readTimeout: 20000
 
-tess4j:
-  data-path: D:\\Qiao\\leadnews
-  language: chi_sim
