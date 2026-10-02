@@ -55,33 +55,33 @@ The system is strictly layered to separate routing, business logic, asynchronous
 ```mermaid
 flowchart TB
     %% 1. Submission Flow (Sequential)
-    Submit(["📥 Submit Task"]) --> AddTask["⚙️ addTask()"]
-    AddTask -->|1. Persist First| DB[("🗄️ MySQL<br/>(taskinfo)")]
-    DB -->|2. Evaluate Time| Router{"Execution Time?"}
+    Submit(["📥 Submit Task"]) --> AddTask["⚙️ addTask"]
+    AddTask -->|"1. Persist First"| DB[("🗄️ MySQL (taskinfo)")]
+    DB -->|"2. Evaluate Time"| Router{"Execution Time?"}
     
-    Router -.->|> 5m| Hold["(Hold in DB)"]
-    Router -->|<= 5m| ZSet[("⏳ Redis ZSet<br/>(future_*)")]
-    Router -->|Immediate| List[("🚀 Redis List<br/>(topic_*)")]
+    Router -.->|"Over 5m"| Hold["Hold in DB"]
+    Router -->|"Under 5m"| ZSet[("⏳ Redis ZSet (future)")]
+    Router -->|"Immediate"| List[("🚀 Redis List (topic)")]
 
     %% 2. The 1-min Pipeline Migration (ZSet -> List) - HIGHLIGHTED
-    ZSet -->|zRangeByScore (expired)| Refresh["🔥 refresh()<br/>@Scheduled(1m)"]
-    Refresh -->|Pipeline: zRem + rPush| List
+    ZSet -->|"zRangeByScore"| Refresh["🔥 refresh() Cron"]
+    Refresh -->|"zRem + rPush"| List
 
     %% 3. The 5-min DB Sync & Recovery
-    DB -.->|Query upcoming < 5m tasks| Reload["⚙️ reloadData()<br/>@Scheduled(5m)"]
-    Reload -.->|Clear & Rebuild| ZSet
-    Reload -.->|Clear & Rebuild| List
+    DB -.->|"Query tasks"| Reload["⚙️ reloadData() Cron"]
+    Reload -.->|"Rebuild Cache"| ZSet
+    Reload -.->|"Rebuild Cache"| List
 
     %% 4. Consumption Flow
-    List -->|lRightPop| Poll["⚙️ poll()"]
-    Poll -->|Return| Worker(["🚀 Execute Logic"])
-    Poll -->|Status = EXECUTED| DB
+    List -->|"lRightPop"| Poll["⚙️ poll()"]
+    Poll -->|"Return"| Worker(["🚀 Execute Logic"])
+    Poll -->|"Set EXECUTED"| DB
 
     %% 5. Cancellation Flow
     Abort(["🚫 Abort Request"]) -.-> Cancel["⚙️ cancelTask()"]
-    Cancel -.->|Status = CANCELLED| DB
-    Cancel -.->|If future: zRemove| ZSet
-    Cancel -.->|If ready: lRemove| List
+    Cancel -.->|"Set CANCELLED"| DB
+    Cancel -.->|"zRemove"| ZSet
+    Cancel -.->|"lRemove"| List
 
     %% UI Styling for Highlights
     style Refresh fill:#ffecb3,stroke:#ff8f00,stroke-width:4px,color:#d84315
