@@ -1,11 +1,6 @@
 package com.news.article.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import lombok.RequiredArgsConstructor;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.news.article.mapper.ApArticleConfigMapper;
-import com.news.article.mapper.ApArticleContentMapper;
-import com.news.article.mapper.ApArticleMapper;
+import com.news.article.repository.ApArticleRepository;
 import com.news.article.service.ApArticleService;
 import com.news.article.service.ArticleFreemarkerService;
 import com.news.common.constants.ArticleConstants;
@@ -13,110 +8,72 @@ import com.news.model.article.dtos.ArticleDto;
 import com.news.model.article.dtos.ArticleHomeDto;
 import com.news.model.article.dtos.ArticleInfoDto;
 import com.news.model.article.pojos.ApArticle;
-import com.news.model.article.pojos.ApArticleConfig;
-import com.news.model.article.pojos.ApArticleContent;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
-public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle> implements ApArticleService {
+public class ApArticleServiceImpl implements ApArticleService {
 
-    private final ApArticleMapper apArticleMapper;
+    private static final int DEFAULT_PAGE_SIZE = 7;
+    private static final int MAX_PAGE_SIZE = 50;
 
-    private final static short MAX_PAGE_SIZE = 50;
-
-    @Override
-    public ResponseResult load(ArticleHomeDto dto, Short type) {
-
-        Integer size = dto.getSize();
-        if(size == null || size == 0){
-            size = 7;
-        }
-        size = Math.min(size,MAX_PAGE_SIZE);
-        dto.setSize(size);
-
-        if(!type.equals(ArticleConstants.LOADTYPE_LOAD_MORE) && !type.equals(ArticleConstants.LOADTYPE_LOAD_NEW)){
-            type = ArticleConstants.LOADTYPE_LOAD_MORE;
-        }
-
-        if(StringUtils.isBlank(dto.getTag())){
-            dto.setTag(ArticleConstants.DEFAULT_TAG);
-        }
-
-        if(dto.getMaxBehotTime() == null){
-            dto.setMaxBehotTime(new Date());
-        }
-        if(dto.getMinBehotTime() == null){
-            dto.setMinBehotTime(new Date());
-        }
-
-        List<ApArticle> apArticleList = apArticleMapper.loadArticleList(dto, type);
-        return ResponseResult.okResult(apArticleList);
-    }
-
-    private final ApArticleConfigMapper apArticleConfigMapper;
-
-    private final ApArticleContentMapper apArticleContentMapper;
-
+    private final ApArticleRepository articleRepository;
+    private final ArticlePersistenceService persistenceService;
     private final ArticleFreemarkerService articleFreemarkerService;
 
     @Override
+    public ResponseResult load(ArticleHomeDto dto, Short type) {
+        int size = dto.getSize() == null || dto.getSize() <= 0
+                ? DEFAULT_PAGE_SIZE
+                : Math.min(dto.getSize(), MAX_PAGE_SIZE);
+        dto.setSize(size);
+
+        if (!ArticleConstants.LOADTYPE_LOAD_MORE.equals(type)
+                && !ArticleConstants.LOADTYPE_LOAD_NEW.equals(type)) {
+            type = ArticleConstants.LOADTYPE_LOAD_MORE;
+        }
+        if (StringUtils.isBlank(dto.getTag())) {
+            dto.setTag(ArticleConstants.DEFAULT_TAG);
+        }
+        if (dto.getMaxBehotTime() == null) {
+            dto.setMaxBehotTime(new Date());
+        }
+        if (dto.getMinBehotTime() == null) {
+            dto.setMinBehotTime(new Date());
+        }
+
+        Date beforeTime = ArticleConstants.LOADTYPE_LOAD_MORE.equals(type)
+                ? dto.getMinBehotTime() : null;
+        Date afterTime = ArticleConstants.LOADTYPE_LOAD_NEW.equals(type)
+                ? dto.getMaxBehotTime() : null;
+        Integer channelId = ArticleConstants.DEFAULT_TAG.equals(dto.getTag())
+                ? null : Integer.valueOf(dto.getTag());
+        List<ApArticle> articles = articleRepository.findFeed(
+                beforeTime, afterTime, channelId, PageRequest.of(0, size));
+        return ResponseResult.okResult(articles);
+    }
+
+    @Override
     public ResponseResult saveArticle(ArticleDto dto) {
-        if (dto == null){
+        if (dto == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
         }
-
-        ApArticle apArticle = new ApArticle();
-        BeanUtils.copyProperties(dto,apArticle);
-
-        if(dto.getId() == null){
-            save(apArticle);
-
-            ApArticleConfig apArticleConfig = new ApArticleConfig();
-            apArticleConfig.setArticleId(apArticle.getId());
-            apArticleConfig.setIsComment(true);
-            apArticleConfig.setIsDelete(false);
-            apArticleConfig.setIsDown(false);
-            apArticleConfig.setIsForward(true);
-
-            apArticleConfigMapper.insert(apArticleConfig);
-
-            ApArticleContent apArticleContent = new ApArticleContent();
-            apArticleContent.setArticleId(apArticle.getId());
-            apArticleContent.setContent(dto.getContent());
-            apArticleContentMapper.insert(apArticleContent);
-
-        }else {
-            updateById(apArticle);
-            ApArticleContent apArticleContent = apArticleContentMapper.selectOne(Wrappers.<ApArticleContent>lambdaQuery().eq(ApArticleContent::getArticleId,apArticle.getId()));
-            apArticleContent.setContent(dto.getContent());
-            apArticleContentMapper.updateById(apArticleContent);
-        }
-
-        articleFreemarkerService.buildArticleToMinIO(apArticle,dto.getContent());
-        return ResponseResult.okResult(apArticle.getId());
+        ApArticle article = persistenceService.save(dto);
+        articleFreemarkerService.buildArticleToMinIO(article, dto.getContent());
+        return ResponseResult.okResult(article.getId());
     }
 
     @Override
     public ResponseResult delArticle(Long id) {
-
-        removeById(id);
-        ApArticleConfig apArticleConfig = apArticleConfigMapper.selectOne(Wrappers.<ApArticleConfig>lambdaQuery().eq(ApArticleConfig::getArticleId, id));
-        apArticleConfig.setIsDelete(true);
-        apArticleConfigMapper.updateById(apArticleConfig);
-
-        apArticleContentMapper.delete(Wrappers.<ApArticleContent>lambdaQuery().eq(ApArticleContent::getArticleId, id));
-
+        persistenceService.delete(id);
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS.getCode());
     }
 
@@ -125,5 +82,8 @@ public class ApArticleServiceImpl extends ServiceImpl<ApArticleMapper, ApArticle
         return null;
     }
 
-
+    @Override
+    public ApArticle getById(Long id) {
+        return articleRepository.findById(id).orElse(null);
+    }
 }

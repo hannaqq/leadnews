@@ -1,25 +1,21 @@
 package com.news.behavior.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 
-import com.news.behavior.mapper.ApLikesBehaviorMapper;
 import com.news.behavior.service.ApBehaviorEntryService;
 import com.news.behavior.service.ApLikesBehaviorService;
 import com.news.common.constants.SystemConstants;
 import com.news.model.behavior.dtos.LikesBehaviorDto;
 import com.news.model.behavior.pojos.ApBehaviorEntry;
-import com.news.model.behavior.pojos.ApLikesBehavior;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.model.user.pojos.ApUser;
 import com.news.utils.thread.AppThreadLocalUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class ApLikesBehaviorServiceImpl extends ServiceImpl<ApLikesBehaviorMapper, ApLikesBehavior> implements ApLikesBehaviorService {
+public class ApLikesBehaviorServiceImpl implements ApLikesBehaviorService {
     private final ApBehaviorEntryService apBehaviorEntryService;
 
     @Override

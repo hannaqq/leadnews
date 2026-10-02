@@ -6,7 +6,6 @@ import com.news.behavior.service.ApUnlikesBehaviorService;
 import com.news.model.behavior.dtos.LikesBehaviorDto;
 import com.news.model.behavior.dtos.UnLikesBehaviorDto;
 import com.news.model.common.dtos.ResponseResult;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;

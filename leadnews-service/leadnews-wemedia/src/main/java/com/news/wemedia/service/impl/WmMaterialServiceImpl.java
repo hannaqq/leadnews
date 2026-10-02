@@ -1,103 +1,89 @@
 package com.news.wemedia.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import lombok.RequiredArgsConstructor;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.news.file.service.FileStorageService;
 import com.news.model.common.dtos.PageResponseResult;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.model.wemedia.dtos.WmMaterialDto;
 import com.news.model.wemedia.pojos.WmMaterial;
-import com.news.model.wemedia.pojos.WmNewsMaterial;
 import com.news.utils.thread.WmThreadLocalUtil;
-import com.news.wemedia.mapper.WmMaterialMapper;
-import com.news.wemedia.mapper.WmNewsMaterialMapper;
+import com.news.wemedia.repository.WmMaterialRepository;
+import com.news.wemedia.repository.WmNewsMaterialRepository;
 import com.news.wemedia.service.WmMaterialService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class WmMaterialServiceImpl extends ServiceImpl<WmMaterialMapper, WmMaterial> implements WmMaterialService {
+public class WmMaterialServiceImpl implements WmMaterialService {
     private final FileStorageService fileStorageService;
+    private final WmMaterialRepository materialRepository;
+    private final WmNewsMaterialRepository relationRepository;
 
     @Override
-    public ResponseResult uploadPicture(MultipartFile multipartFile) {
-        if(multipartFile == null || multipartFile.getSize() == 0){
+    public ResponseResult uploadPicture(MultipartFile file) {
+        if (file == null || file.getSize() == 0) {
             return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
         }
-
-        String fileName = UUID.randomUUID().toString().replace("-", "");
-
-        String originalFilename = multipartFile.getOriginalFilename();
-        String postfix = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String fileId = null;
+        String originalName = file.getOriginalFilename();
+        if (originalName == null || !originalName.contains(".")) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
+        }
+        String objectName = UUID.randomUUID().toString().replace("-", "")
+                + originalName.substring(originalName.lastIndexOf('.'));
+        final String fileId;
         try {
-            fileId = fileStorageService.uploadImgFile("", fileName + postfix, multipartFile.getInputStream());
-            log.info("upload picture to minio,fileId:{}",fileId);
-        } catch (IOException e) {
-            e.printStackTrace();
-            log.error("upload failed");
+            fileId = fileStorageService.uploadImgFile("", objectName, file.getInputStream());
+        } catch (IOException exception) {
+            log.error("Failed to upload material", exception);
+            return ResponseResult.errorResult(AppHttpCodeEnum.SERVER_ERROR, "upload failed");
         }
 
-        WmMaterial wmMaterial = new WmMaterial();
-        wmMaterial.setUserId(WmThreadLocalUtil.getUser().getId());
-        wmMaterial.setUrl(fileId);
-        wmMaterial.setIsCollection((short)0);
-        wmMaterial.setType((short)0);
-        wmMaterial.setCreatedTime(new Date());
-        save(wmMaterial);
-
-        return ResponseResult.okResult(wmMaterial);
+        WmMaterial material = new WmMaterial();
+        material.setUserId(WmThreadLocalUtil.getUser().getId());
+        material.setUrl(fileId);
+        material.setIsCollection((short) 0);
+        material.setType((short) 0);
+        material.setCreatedTime(new Date());
+        return ResponseResult.okResult(materialRepository.save(material));
     }
-
-    private final static short MAX_PAGE_SIZE = 50;
 
     @Override
-    public ResponseResult list(WmMaterialDto wmMaterialDto) {
-
-        wmMaterialDto.checkParam();
-        IPage page = new Page(wmMaterialDto.getPage(),wmMaterialDto.getSize());
-        LambdaQueryWrapper<WmMaterial> lqw = new LambdaQueryWrapper<>();
-        if(wmMaterialDto.getIsCollection() != null && wmMaterialDto.getIsCollection() == 1){
-            lqw.eq(WmMaterial::getIsCollection,wmMaterialDto.getIsCollection());
-        }
-        lqw.eq(WmMaterial::getUserId,WmThreadLocalUtil.getUser().getId())
-                .orderByDesc(WmMaterial::getCreatedTime);
-
-        page = page(page, lqw);
-        ResponseResult responseResult = new PageResponseResult(wmMaterialDto.getPage(), wmMaterialDto.getSize(), (int) page.getTotal());
-
-        responseResult.setData(page.getRecords());
-        return responseResult;
+    public ResponseResult list(WmMaterialDto dto) {
+        dto.checkParam();
+        PageRequest request = PageRequest.of(dto.getPage() - 1, dto.getSize(),
+                Sort.by(Sort.Direction.DESC, "createdTime"));
+        Integer userId = WmThreadLocalUtil.getUser().getId();
+        Page<WmMaterial> page = dto.getIsCollection() != null && dto.getIsCollection() == 1
+                ? materialRepository.findByUserIdAndIsCollection(userId, dto.getIsCollection(), request)
+                : materialRepository.findByUserId(userId, request);
+        ResponseResult result = new PageResponseResult(dto.getPage(), dto.getSize(),
+                Math.toIntExact(page.getTotalElements()));
+        result.setData(page.getContent());
+        return result;
     }
 
-    private final WmNewsMaterialMapper wmNewsMaterialMapper;
     @Override
     public ResponseResult delPicture(Integer id) {
-        WmMaterial wmMaterial = getById(id);
-        if(wmMaterial == null){
+        WmMaterial material = materialRepository.findByIdAndUserId(
+                id, WmThreadLocalUtil.getUser().getId()).orElse(null);
+        if (material == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST);
         }
-        List<WmNewsMaterial> wmNewsMaterials = wmNewsMaterialMapper.selectList(Wrappers.<WmNewsMaterial>lambdaQuery().eq(WmNewsMaterial::getMaterialId, id));
-        if(wmNewsMaterials.isEmpty()){
+        if (relationRepository.existsByMaterialId(id)) {
             return ResponseResult.errorResult(AppHttpCodeEnum.MATERIAL_REFERENCED);
         }
-
-        removeById(wmMaterial);
-
+        materialRepository.delete(material);
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS.getCode());
     }
 }

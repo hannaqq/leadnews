@@ -1,7 +1,14 @@
 package com.news.model.schedule.pojos;
 
-import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -15,35 +22,41 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
  *
  * @author itheima
  */
-@Data
-@TableName("taskinfo_logs")
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "taskinfo_logs")
 public class TaskinfoLogs implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(type = IdType.AUTO)
+    @Id
+    @Column(name = "task_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long taskId;
 
-    @TableField("execute_time")
+    @Column(name = "execute_time")
     private Date executeTime;
 
-    @TableField("parameters")
+    @Lob
+    @Column(name = "parameters")
     private byte[] parameters;
 
-    @TableField("priority")
+    @Column(name = "priority")
     private Integer priority;
 
-    @TableField("task_type")
+    @Column(name = "task_type")
     private Integer taskType;
 
     @Version
+    @Column(name = "version")
     private Integer version;
 
     /**
      *  0=int 1=EXECUTED 2=CANCELLED
      */
-    @TableField("status")
+    @Column(name = "status")
     private Integer status;
 
 

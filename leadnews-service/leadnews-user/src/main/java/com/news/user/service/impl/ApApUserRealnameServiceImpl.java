@@ -1,10 +1,5 @@
 package com.news.user.service.impl;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.news.apis.article.IArticleClient;
 import com.news.apis.wemedia.IWemediaClient;
 import com.news.common.constants.ApUserConstants;
@@ -17,21 +12,25 @@ import com.news.model.common.dtos.ResponseResult;
 import com.news.model.user.pojos.ApUser;
 import com.news.model.user.pojos.ApUserRealname;
 import com.news.model.wemedia.pojos.WmUser;
-import com.news.user.mapper.ApUserMapper;
-import com.news.user.mapper.ApUserRealnameMapper;
+import com.news.user.repository.ApUserRealnameRepository;
+import com.news.user.repository.ApUserRepository;
 import com.news.user.service.ApUserRealnameService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import java.util.Date;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ApApUserRealnameServiceImpl extends ServiceImpl<ApUserRealnameMapper,ApUserRealname> implements ApUserRealnameService {
+public class ApApUserRealnameServiceImpl implements ApUserRealnameService {
 
-    private final ApUserMapper apUserMapper;
+    private final ApUserRealnameRepository realnameRepository;
+
+    private final ApUserRepository userRepository;
 
     private final IWemediaClient iWemediaClient;
 
@@ -40,31 +39,22 @@ public class ApApUserRealnameServiceImpl extends ServiceImpl<ApUserRealnameMappe
     @Override
     public ResponseResult getList(AuthDto dto) {
         dto.checkParam();
-        IPage page = new Page(dto.getPage(),dto.getSize());
-
-        LambdaQueryWrapper<ApUserRealname> lqw = new LambdaQueryWrapper<>();
-        if(dto.getId() != null){
-            lqw.eq(ApUserRealname::getId, dto.getId());
-        }
-        if(dto.getStatus() !=null){
-            lqw.eq(ApUserRealname::getStatus, dto.getStatus());
-        }
-        lqw.orderByDesc(ApUserRealname::getCreatedTime);
-
-        page = page(page,lqw);
-        ResponseResult responseResult = new PageResponseResult(dto.getPage(),dto.getSize(),(int)page.getTotal());
-        responseResult.setData(page.getRecords());
+        Short status = dto.getStatus() == null ? null : dto.getStatus().shortValue();
+        Page<ApUserRealname> page = realnameRepository.findForReview(
+                dto.getId(),
+                status,
+                PageRequest.of(dto.getPage() - 1, dto.getSize(),
+                        Sort.by(Sort.Direction.DESC, "createdTime")));
+        ResponseResult responseResult = new PageResponseResult(
+                dto.getPage(), dto.getSize(), Math.toIntExact(page.getTotalElements()));
+        responseResult.setData(page.getContent());
         return responseResult;
     }
 
     @Override
     public ResponseResult pass(AuthDto dto) {
-        update(Wrappers.<ApUserRealname>lambdaUpdate().eq(ApUserRealname::getId, dto.getId())
-                .set(ApUserRealname::getStatus,ApUserConstants.AUTHORIZATION_PASS)
-                .set(ApUserRealname::getUpdatedTime,new Date()));
-
-        ApUserRealname apUserRealname = getById(dto.getId());
-        ApUser apUser = apUserMapper.selectById(apUserRealname.getUserId());
+        ApUserRealname apUserRealname = realnameRepository.findById(dto.getId()).orElseThrow();
+        ApUser apUser = userRepository.findById(apUserRealname.getUserId()).orElseThrow();
         WmUser wmUser = iWemediaClient.getByUserId(apUser.getId());
         if(wmUser == null){
             wmUser = new WmUser();
@@ -73,9 +63,16 @@ public class ApApUserRealnameServiceImpl extends ServiceImpl<ApUserRealnameMappe
             wmUser.setStatus(WemediaConstants.WM_USER_OK);
             wmUser.setCreatedTime(new Date());
             ResponseResult responseResult = iWemediaClient.saveWmUser(wmUser);
-            if(responseResult.getCode() == AppHttpCodeEnum.SUCCESS.getCode()){
-                log.info("wmUser account creat success");
+            if (!isSuccess(responseResult)) {
+                return ResponseResult.errorResult(
+                        AppHttpCodeEnum.SERVER_ERROR, "failed to create wemedia account");
             }
+            wmUser = iWemediaClient.getByUserId(apUser.getId());
+            if (wmUser == null || wmUser.getId() == null) {
+                return ResponseResult.errorResult(
+                        AppHttpCodeEnum.SERVER_ERROR, "created wemedia account could not be loaded");
+            }
+            log.info("wmUser account created successfully");
         }
 
         ApAuthor apAuthor = iArticleClient.getByUserId(apUser.getId());
@@ -86,20 +83,31 @@ public class ApApUserRealnameServiceImpl extends ServiceImpl<ApUserRealnameMappe
             apAuthor.setType((short)2);
             apAuthor.setCreatedTime(new Date());
             apAuthor.setWmUserId(wmUser.getId());
-            iArticleClient.saveApAuthor(apAuthor);
+            ResponseResult responseResult = iArticleClient.saveApAuthor(apAuthor);
+            if (!isSuccess(responseResult)) {
+                return ResponseResult.errorResult(
+                        AppHttpCodeEnum.SERVER_ERROR, "failed to create article author");
+            }
         }
 
+        apUserRealname.setStatus(ApUserConstants.AUTHORIZATION_PASS);
+        apUserRealname.setUpdatedTime(new Date());
+        realnameRepository.save(apUserRealname);
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
+    }
+
+    private boolean isSuccess(ResponseResult responseResult) {
+        return responseResult != null
+                && Integer.valueOf(AppHttpCodeEnum.SUCCESS.getCode()).equals(responseResult.getCode());
     }
 
     @Override
     public ResponseResult fail(AuthDto dto) {
-        ApUserRealname apUserRealname = new ApUserRealname();
-        apUserRealname.setId(dto.getId());
+        ApUserRealname apUserRealname = realnameRepository.findById(dto.getId()).orElseThrow();
         apUserRealname.setReason(dto.getMsg());
         apUserRealname.setUpdatedTime(new Date());
         apUserRealname.setStatus(ApUserConstants.AUTHORIZATION_FAILED);
-        updateById(apUserRealname);
+        realnameRepository.save(apUserRealname);
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
     }
 }

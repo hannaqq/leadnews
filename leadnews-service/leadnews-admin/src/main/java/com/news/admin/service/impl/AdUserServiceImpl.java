@@ -1,16 +1,14 @@
 package com.news.admin.service.impl;
 
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.news.admin.mapper.AdUserMapper;
+import com.news.admin.repository.AdUserRepository;
 import com.news.admin.service.AdUserService;
 import com.news.model.admin.dtos.AdUserDto;
 import com.news.model.admin.pojos.AdUser;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.utils.common.AppJwtUtil;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
@@ -19,8 +17,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-@Slf4j
-public class AdUserServiceImpl extends ServiceImpl<AdUserMapper, AdUser> implements AdUserService {
+@RequiredArgsConstructor
+public class AdUserServiceImpl implements AdUserService {
+
+    private final AdUserRepository adUserRepository;
+
     @Override
     public ResponseResult login(AdUserDto dto) {
         if(StringUtils.isBlank(dto.getName()) || StringUtils.isBlank(dto.getPassword())){
@@ -28,7 +29,7 @@ public class AdUserServiceImpl extends ServiceImpl<AdUserMapper, AdUser> impleme
             map.put("token", AppJwtUtil.getToken(0L));
             return ResponseResult.okResult(map);
         }
-        AdUser adUser = getOne(Wrappers.<AdUser>lambdaQuery().eq(AdUser::getName, dto.getName()));
+        AdUser adUser = adUserRepository.findByName(dto.getName()).orElse(null);
         if(adUser == null){
             return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST);
         }

@@ -1,34 +1,44 @@
 package com.news.model.article.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import lombok.Data;
+import com.news.model.persistence.SnowflakeId;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.Date;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "ap_collection")
 public class ApCollection {
-    @TableId(value = "id",type = IdType.ASSIGN_ID)
+    @Id
+    @SnowflakeId
+    @Column(name = "id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
-    @TableField("entry_id")
+    @Column(name = "entry_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long entryId;
 
-    @TableField("article_id")
+    @Column(name = "article_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long articleId;
 
-    @TableField("type")
+    @Column(name = "type")
     private Short type;
 
-    @TableField("published_time")
+    @Column(name = "published_time")
     private Date publishedTime;
 
-    @TableField("collection_time")
+    @Column(name = "collection_time")
     private Date collectionTime;
 }

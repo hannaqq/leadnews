@@ -1,53 +1,42 @@
 package com.news.model.user.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
 
-@Data
-@TableName("ap_user")
+@Getter @Setter @NoArgsConstructor
+@Entity
+@Table(name = "ap_user")
 public class ApUser implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) @Column(name = "id")
     private Integer id;
-
-    @TableField("salt")
+    @Column(name = "salt")
     private String salt;
-
-    @TableField("name")
+    @Column(name = "name")
     private String name;
-
-    @TableField("password")
+    @Column(name = "password")
     private String password;
-
-    @TableField("phone")
+    @Column(name = "phone")
     private String phone;
-
-    @TableField("image")
+    @Column(name = "image")
     private String image;
-
-    @TableField("sex")
+    @Column(name = "sex")
     private Boolean sex;
-
-    @TableField("is_certification")
+    @Column(name = "is_certification")
     private Boolean isCertification;
-
-    @TableField("is_identity_authentication")
+    @Column(name = "is_identity_authentication")
     private Boolean isIdentityAuthentication;
-
-    @TableField("status")
+    @Column(name = "status")
     private Short status;
-
-    @TableField("flag")
+    @Column(name = "flag")
     private Integer flag;
-
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
 
 }

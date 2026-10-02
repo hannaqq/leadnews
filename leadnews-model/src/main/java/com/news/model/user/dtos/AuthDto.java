@@ -11,10 +11,10 @@ public class AuthDto {
     private Integer status;
 
     public void checkParam(){
-        if(this.page == null || this.page < 0){
+        if(this.page == null || this.page < 1){
             setPage(1);
         }
-        if(this.size == null || this.size < 0 || this.size > 100){
+        if(this.size == null || this.size < 1 || this.size > 100){
             setSize(10);
         }
     }

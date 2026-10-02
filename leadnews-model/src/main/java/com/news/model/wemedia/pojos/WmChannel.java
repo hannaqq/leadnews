@@ -1,10 +1,9 @@
 package com.news.model.wemedia.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -14,25 +13,30 @@ import java.util.Date;
  *
  * @author itheima
  */
-@Data
-@TableName("wm_channel")
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "wm_channel")
 public class WmChannel implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer id;
 
     /**
      * Channel name
      */
-    @TableField("name")
+    @Column(name = "name")
     private String name;
 
     /**
      * Channel description
      */
-    @TableField("description")
+    @Column(name = "description")
     private String description;
 
     /**
@@ -40,7 +44,7 @@ public class WmChannel implements Serializable {
      * 1: Default (true)
      * 0: Non-default (false)
      */
-    @TableField("is_default")
+    @Column(name = "is_default")
     private Boolean isDefault;
 
     /**
@@ -48,19 +52,19 @@ public class WmChannel implements Serializable {
      * 1: Enabled (true)
      * 0: Disabled (false)
      */
-    @TableField("status")
+    @Column(name = "status")
     private Boolean status;
 
     /**
      * Default sort order
      */
-    @TableField("ord")
+    @Column(name = "ord")
     private Integer ord;
 
     /**
      * Creation time
      */
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
 
 }

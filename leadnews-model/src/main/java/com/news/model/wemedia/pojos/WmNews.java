@@ -1,18 +1,20 @@
 package com.news.model.wemedia.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
-@Data
-@TableName("wm_news")
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "wm_news")
 public class WmNews implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -20,30 +22,33 @@ public class WmNews implements Serializable {
     /**
      * Primary key
      */
-    @TableId(value = "id", type = IdType.AUTO)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer id;
-    @TableField("user_id")
+    @Column(name = "user_id")
     private Integer userId;
-    @TableField("title")
+    @Column(name = "title")
     private String title;
-    @TableField("content")
+    @Lob
+    @Column(name = "content")
     private String content;
-    @TableField("channel_id")
+    @Column(name = "channel_id")
     private Integer channelId;
-    @TableField("labels")
+    @Column(name = "labels")
     private String labels;
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
-    @TableField("submited_time")
+    @Column(name = "submited_time")
     private Date submitedTime;
-    @TableField("publish_time")
+    @Column(name = "publish_time")
     private Date publishTime;
-    @TableField("article_id")
+    @Column(name = "article_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long articleId;
-    @TableField("images")
+    @Column(name = "images")
     private String images;
-    @TableField("enable")
+    @Column(name = "enable")
     private Short enable;
 
     /**
@@ -52,7 +57,7 @@ public class WmNews implements Serializable {
      * 1: Single image
      * 3: Multiple images
      */
-    @TableField("type")
+    @Column(name = "type")
     private Short type;
 
     /**
@@ -62,22 +67,24 @@ public class WmNews implements Serializable {
      * 2: Review failed
      * 3: Manual review
      * 4: Manual review passed
+     * 7: Automatic review in progress
      * 8: Review passed (pending publish)
      * 9: Published
      */
-    @TableField("status")
+    @Column(name = "status")
     private Short status;
     /**
      * Rejection reason
      */
-    @TableField("reason")
+    @Column(name = "reason")
     private String reason;
 
     /**
      * Article status enumeration
      */
     public enum Status{
-        NORMAL((short)0),SUBMIT((short)1),FAIL((short)2),ADMIN_AUTH((short)3),ADMIN_SUCCESS((short)4),SUCCESS((short)8),PUBLISHED((short)9);
+        NORMAL((short)0),SUBMIT((short)1),FAIL((short)2),ADMIN_AUTH((short)3),ADMIN_SUCCESS((short)4),
+        PROCESSING((short)7),SUCCESS((short)8),PUBLISHED((short)9);
          short code;
          Status(short code){
              this.code = code;

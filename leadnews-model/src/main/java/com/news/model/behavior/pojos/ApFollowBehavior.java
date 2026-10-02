@@ -1,34 +1,45 @@
 package com.news.model.behavior.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import lombok.Data;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "ap_follow_behavior")
 public class ApFollowBehavior implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
-    @TableField("entry_id")
+    @Column(name = "entry_id")
     private Integer entryId;
 
-    @TableField("article_id")
+    @Column(name = "article_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long articleId;
 
-    @TableField("follow_id")
+    @Column(name = "follow_id")
     private Integer followId;
 
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
 }

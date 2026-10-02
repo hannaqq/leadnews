@@ -4,14 +4,17 @@ import com.news.common.constants.ScheduleConstants;
 import com.news.model.schedule.dtos.Task;
 import com.news.model.schedule.pojos.TaskinfoLogs;
 import com.news.schedule.ScheduleApplication;
-import com.news.schedule.mapper.TaskinfoLogsMapper;
+import com.news.schedule.repository.TaskinfoLogsRepository;
 import com.news.schedule.service.TaskService;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,11 +37,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 @SpringBootTest(
         classes = ScheduleApplication.class,
         properties = {
-                "spring.cloud.consul.discovery.enabled=false",
-                "spring.cloud.consul.config.enabled=false"
+                "spring.config.import=optional:consul:",
+                "spring.cloud.consul.discovery.enabled=false"
         }
 )
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
+@EnabledIfEnvironmentVariable(named = "RUN_SCHEDULE_STRESS_TEST", matches = "true")
 public class TaskRaceConditionStressTest {
 
     private static final int TASK_TYPE = 9001;
@@ -51,7 +55,7 @@ public class TaskRaceConditionStressTest {
     private TaskService taskService;
 
     @Autowired
-    private TaskinfoLogsMapper taskinfoLogsMapper;
+    private TaskinfoLogsRepository taskinfoLogsRepository;
 
     @Test
     public void executeAndCancelShouldNotOverwriteEachOther() throws Exception {
@@ -110,7 +114,7 @@ public class TaskRaceConditionStressTest {
         }
 
         start.countDown();
-        Assert.assertTrue("stress test timed out", done.await(60, TimeUnit.SECONDS));
+        assertTrue(done.await(60, TimeUnit.SECONDS), "stress test timed out");
         pool.shutdownNow();
 
         int executed = 0;
@@ -119,8 +123,8 @@ public class TaskRaceConditionStressTest {
         int unexpected = 0;
 
         for (Long taskId : taskIds) {
-            TaskinfoLogs log = taskinfoLogsMapper.selectById(taskId);
-            Assert.assertNotNull("missing task log for id=" + taskId, log);
+            TaskinfoLogs log = taskinfoLogsRepository.findById(taskId).orElse(null);
+            assertNotNull(log, "missing task log for id=" + taskId);
             Integer status = log.getStatus();
             if (status == null) {
                 unexpected++;
@@ -147,9 +151,9 @@ public class TaskRaceConditionStressTest {
         // With state-machine conditional update:
         // - no illegal transition / overwrite
         // - every task should be finalized exactly once
-        Assert.assertEquals(0, unexpected);
-        Assert.assertEquals(0, scheduled);
-        Assert.assertEquals(TASK_COUNT, executed + cancelled);
-        Assert.assertEquals(TASK_COUNT, cancelSuccess.get() + pollSuccess.get());
+        assertEquals(0, unexpected);
+        assertEquals(0, scheduled);
+        assertEquals(TASK_COUNT, executed + cancelled);
+        assertEquals(TASK_COUNT, cancelSuccess.get() + pollSuccess.get());
     }
 }

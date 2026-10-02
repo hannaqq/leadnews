@@ -22,7 +22,8 @@ public class AuthorizeFilter implements Ordered, GlobalFilter {
         ServerHttpRequest request = exchange.getRequest();
         ServerHttpResponse response = exchange.getResponse();
 
-        if(request.getURI().getPath().contains("/login")){
+        String path = request.getURI().getPath();
+        if(path.equals("/wemedia/login/in") || path.equals("/actuator/health")){
             return chain.filter(exchange);
         }
 

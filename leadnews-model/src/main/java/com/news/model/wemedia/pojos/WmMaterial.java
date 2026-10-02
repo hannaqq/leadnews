@@ -1,10 +1,9 @@
 package com.news.model.wemedia.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -14,8 +13,11 @@ import java.util.Date;
  *
  * @author itheima
  */
-@Data
-@TableName("wm_material")
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "wm_material")
 public class WmMaterial implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -23,19 +25,21 @@ public class WmMaterial implements Serializable {
     /**
      * Primary key
      */
-    @TableId(value = "id", type = IdType.AUTO)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer id;
 
     /**
      * WeMedia user ID
      */
-    @TableField("user_id")
+    @Column(name = "user_id")
     private Integer userId;
 
     /**
      * Material URL
      */
-    @TableField("url")
+    @Column(name = "url")
     private String url;
 
     /**
@@ -43,19 +47,19 @@ public class WmMaterial implements Serializable {
      * 0: Image
      * 1: Video
      */
-    @TableField("type")
+    @Column(name = "type")
     private Short type;
 
     /**
      * Whether collected
      */
-    @TableField("is_collection")
+    @Column(name = "is_collection")
     private Short isCollection;
 
     /**
      * Creation time
      */
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
 
 }

@@ -1,32 +1,46 @@
 package com.news.model.article.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import com.news.model.persistence.SnowflakeId;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
-@Data
-@TableName("ap_article")
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "ap_article")
 public class ApArticle implements Serializable {
 
-    @TableId(value = "id",type = IdType.ASSIGN_ID)
+    @Id
+    @SnowflakeId
+    @Column(name = "id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
+
+    @Column(name = "title")
     private String title;
-    @TableField("author_id")
+
+    @Column(name = "author_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long authorId;
-    @TableField("author_name")
+
+    @Column(name = "author_name")
     private String authorName;
-    @TableField("channel_id")
+
+    @Column(name = "channel_id")
     private Integer channelId;
-    @TableField("channel_name")
+
+    @Column(name = "channel_name")
     private String channelName;
 
     /**
@@ -35,6 +49,7 @@ public class ApArticle implements Serializable {
      * 1: Single image
      * 2: Multiple images
      */
+    @Column(name = "layout")
     private Short layout;
 
     /**
@@ -45,69 +60,77 @@ public class ApArticle implements Serializable {
      * 3: Featured article
      * 4: VIP article
      */
+    @Column(name = "flag")
     private Byte flag;
 
     /**
      * Article cover images (comma-separated)
      */
+    @Column(name = "images")
     private String images;
 
     /**
      * Article tags
      */
+    @Column(name = "labels")
     private String labels;
 
     /**
      * Like count
      */
+    @Column(name = "likes")
     private Integer likes;
 
     /**
      * Collection count
      */
+    @Column(name = "collection")
     private Integer collection;
 
     /**
      * Comment count
      */
+    @Column(name = "comment")
     private Integer comment;
 
     /**
      * View count
      */
+    @Column(name = "views")
     private Integer views;
 
 
-    @TableField("province_id")
+    @Column(name = "province_id")
     private Integer provinceId;
 
-    @TableField("city_id")
+    @Column(name = "city_id")
     private Integer cityId;
 
-    @TableField("county_id")
+    @Column(name = "county_id")
     private Integer countyId;
 
 
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
 
-    @TableField("publish_time")
+    @Column(name = "publish_time")
     private Date publishTime;
 
     /**
      * Synchronization status
      */
-    @TableField("sync_status")
+    @Column(name = "sync_status")
     private Boolean syncStatus;
 
     /**
      * Article origin
      */
+    @Column(name = "origin")
     private Boolean origin;
 
     /**
      * Static page URL
      */
-    @TableField("static_url")
+    @Column(name = "static_url")
     private String staticUrl;
 }

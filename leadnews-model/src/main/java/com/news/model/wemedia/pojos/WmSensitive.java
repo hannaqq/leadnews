@@ -1,27 +1,31 @@
 package com.news.model.wemedia.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
 
-@Data
-@TableName("wm_sensitive")
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "wm_sensitive")
 public class WmSensitive implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer id;
 
-    @TableField("sensitives")
+    @Column(name = "sensitives")
     private String sensitives;
 
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
 
 }

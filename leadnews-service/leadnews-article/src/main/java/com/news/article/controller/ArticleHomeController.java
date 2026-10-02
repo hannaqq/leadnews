@@ -6,7 +6,6 @@ import com.news.common.constants.ArticleConstants;
 import com.news.model.article.dtos.ArticleHomeDto;
 import com.news.model.article.dtos.ArticleInfoDto;
 import com.news.model.common.dtos.ResponseResult;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

@@ -1,6 +1,5 @@
 package com.news.wemedia.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import com.news.apis.article.IArticleClient;
@@ -13,19 +12,17 @@ import com.news.model.wemedia.pojos.WmNews;
 import com.news.model.wemedia.pojos.WmSensitive;
 import com.news.model.wemedia.pojos.WmUser;
 import com.news.utils.common.SensitiveWordUtil;
-import com.news.wemedia.mapper.WmChannelMapper;
-import com.news.wemedia.mapper.WmNewsMapper;
-import com.news.wemedia.mapper.WmSensitiveMapper;
-import com.news.wemedia.mapper.WmUserMapper;
+import com.news.wemedia.repository.WmChannelRepository;
+import com.news.wemedia.repository.WmNewsRepository;
+import com.news.wemedia.repository.WmSensitiveRepository;
+import com.news.wemedia.repository.WmUserRepository;
 import com.news.wemedia.service.WmNewsAutoScanService;
 import com.news.wemedia.service.AwsModerationService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,21 +31,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 @Service
 @Slf4j
-@Transactional
 @RequiredArgsConstructor
 public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
 
-    private final WmNewsMapper wmNewsMapper;
+    private final WmNewsRepository newsRepository;
+    private final WemediaPersistenceService persistenceService;
 
     @Override
     @Async
     public void autoScanWmNews(Integer id){
-        WmNews wmNews = wmNewsMapper.selectById(id);
+        if (!persistenceService.claimNewsForProcessing(id)) {
+            return;
+        }
+        WmNews wmNews = newsRepository.findById(id).orElse(null);
         if(wmNews == null){
             throw new RuntimeException("article doesn't exist");
         }
-
-        if(wmNews.getStatus().equals(WmNews.Status.SUBMIT.getCode())){
+        try {
             Map<String, Object> textAndImages = handleTextAndImages(wmNews);
             if(!handleSensitiveScan((String) textAndImages.get("content"),wmNews)) return;
             if(!handleTextScan((String) textAndImages.get("content"))) return;
@@ -57,22 +56,26 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
             if(!responseResult.getCode().equals(200)){
                 throw new RuntimeException("save failed");
             }
-            wmNews.setArticleId((Long) responseResult.getData());
-            updateWmNews(wmNews,(short) 9,"processed");
-
+            if (!persistenceService.completePublishing(wmNews.getId(), (Long) responseResult.getData())) {
+                throw new IllegalStateException("News state changed while publishing");
+            }
+        } catch (Exception exception) {
+            log.error("Automatic review failed for news {}", id, exception);
+            persistenceService.transitionProcessingStatus(id, WmNews.Status.ADMIN_AUTH.getCode(),
+                    "automatic review unavailable; manual review required");
         }
-
     }
 
-    private final WmSensitiveMapper wmSensitiveMapper;
+    private final WmSensitiveRepository sensitiveRepository;
     private boolean handleSensitiveScan(String content,WmNews wmNews) {
-        List<WmSensitive> wmSensitives = wmSensitiveMapper.selectList(Wrappers.<WmSensitive>lambdaQuery().select(WmSensitive::getSensitives));
+        List<WmSensitive> wmSensitives = sensitiveRepository.findAll();
         List<String> sensitiveList = wmSensitives.stream().map(WmSensitive::getSensitives).collect(Collectors.toList());
         SensitiveWordUtil.initMap(sensitiveList);
 
         Map<String, Integer> map = SensitiveWordUtil.matchWords(content);
         if(map.size()>0){
-            updateWmNews(wmNews, (short) 2,"the content contains restrict words");
+            transitionFromProcessing(wmNews, WmNews.Status.FAIL.getCode(),
+                    "the content contains restrict words");
             return false;
         }
 
@@ -81,9 +84,9 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
 
     private final IArticleClient iArticleClient;
 
-    private final WmChannelMapper wmChannelMapper;
+    private final WmChannelRepository channelRepository;
 
-    private final WmUserMapper wmUserMapper;
+    private final WmUserRepository userRepository;
 
     private final FileStorageService fileStorageService;
 
@@ -92,8 +95,8 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
     private final ObjectMapper objectMapper;
 
     private ResponseResult saveAppArticle(WmNews wmNews) {
-        WmUser wmUser = wmUserMapper.selectById(wmNews.getUserId());
-        WmChannel wmChannel = wmChannelMapper.selectById(wmNews.getChannelId());
+        WmUser wmUser = userRepository.findById(wmNews.getUserId()).orElse(null);
+        WmChannel wmChannel = channelRepository.findById(wmNews.getChannelId()).orElse(null);
 
         ArticleDto dto = new ArticleDto();
         BeanUtils.copyProperties(wmNews,dto);
@@ -137,13 +140,17 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
                 // 使用 AWS Rekognition 进行图片安全审核和 OCR 识别
                 boolean isSafe = awsModerationService.scanImageWithAwsRekognition(bytes);
                 if(!isSafe){
-                    updateWmNews(wmNews, (short) 2, "AWS Rekognition: image contains explicit/sensitive content");
+                    transitionFromProcessing(wmNews, WmNews.Status.FAIL.getCode(),
+                            "AWS Rekognition: image contains explicit/sensitive content");
                     flag = false;
                     break;
                 }
             }
         }catch (Exception e) {
-            e.printStackTrace();
+            log.error("Image moderation failed for news {}", wmNews.getId(), e);
+            transitionFromProcessing(wmNews, WmNews.Status.ADMIN_AUTH.getCode(),
+                    "image moderation unavailable; manual review required");
+            return false;
         }
 
         return flag;
@@ -159,7 +166,7 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
             for (Map map : maps) {
                 if(map.get("type").equals("text")){
                     stringBuilder.append(map.get("value"));
-                }else if(map.get("type").equals("images")){
+                }else if(map.get("type").equals("image")){
                     images.add((String) map.get("value"));
                 }
             }
@@ -176,10 +183,11 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
 
     }
 
-    private void updateWmNews(WmNews wmNews, short status, String reason){
-        wmNews.setStatus(status);
-        wmNews.setReason(reason);
-        wmNewsMapper.updateById(wmNews);
+    private void transitionFromProcessing(WmNews wmNews, short status, String reason){
+        if (persistenceService.transitionProcessingStatus(wmNews.getId(), status, reason)) {
+            wmNews.setStatus(status);
+            wmNews.setReason(reason);
+        }
     }
 
 }

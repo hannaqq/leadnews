@@ -1,26 +1,20 @@
 package com.news.schedule.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import com.news.common.constants.ScheduleConstants;
 import com.news.common.redis.CacheService;
 import com.news.model.schedule.dtos.Task;
 import com.news.model.schedule.pojos.Taskinfo;
-import com.news.model.schedule.pojos.TaskinfoLogs;
-import com.news.schedule.mapper.TaskinfoLogsMapper;
-import com.news.schedule.mapper.TaskinfoMapper;
 import com.news.schedule.service.TaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -40,10 +34,8 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public long addTask(Task task) {
 
-        boolean success = addTaskToDb(task);
-        if(success){
-            addTaskToCache(task);
-        }
+        task.setTaskId(persistenceService.addTask(task));
+        addTaskToCache(task);
 
         return task.getTaskId();
     }
@@ -58,7 +50,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public boolean cancelTask(long taskId) {
         boolean flag = false;
-        Task task = updateDb(taskId,ScheduleConstants.CANCELLED);
+        Task task = persistenceService.finalizeTask(taskId,ScheduleConstants.CANCELLED);
 
         if(task != null){
             removeTaskFromCache(task);
@@ -85,7 +77,7 @@ public class TaskServiceImpl implements TaskService {
         if(StringUtils.isNotBlank(task_json)){
             Task polled = objectMapper.readValue(task_json, Task.class);
             // Only return the task if SCHEDULED -> EXECUTED succeeds; otherwise it was cancelled
-            task = updateDb(polled.getTaskId(), ScheduleConstants.EXECUTED);
+            task = persistenceService.finalizeTask(polled.getTaskId(), ScheduleConstants.EXECUTED);
         }
 
         return task;
@@ -105,37 +97,6 @@ public class TaskServiceImpl implements TaskService {
         } else {
             cacheService.zRemove(ScheduleConstants.FUTURE+key,0,objectMapper.writeValueAsString(task));
         }
-    }
-
-    /**
-     * Finalize a task with state-machine conditional update.
-     * Only allows SCHEDULED -> EXECUTED / CANCELLED to avoid execute/cancel races.
-     *
-     * @return task when transition succeeds; null if already finalized
-     */
-    private Task updateDb(long taskId, int status) {
-        TaskinfoLogs taskinfoLogs = taskinfoLogsMapper.selectById(taskId);
-        if (taskinfoLogs == null) {
-            return null;
-        }
-
-        int rows = taskinfoLogsMapper.update(null, Wrappers.<TaskinfoLogs>lambdaUpdate()
-                .set(TaskinfoLogs::getStatus, status)
-                .eq(TaskinfoLogs::getTaskId, taskId)
-                .eq(TaskinfoLogs::getStatus, ScheduleConstants.SCHEDULED));
-
-        if (rows == 0) {
-            log.warn("task {} already finalized, skip transition to status={}", taskId, status);
-            return null;
-        }
-
-        taskinfoMapper.deleteById(taskId);
-
-        taskinfoLogs.setStatus(status);
-        Task task = new Task();
-        BeanUtils.copyProperties(taskinfoLogs, task);
-        task.setExecuteTime(taskinfoLogs.getExecuteTime().getTime());
-        return task;
     }
 
     private final CacheService cacheService;
@@ -167,30 +128,9 @@ public class TaskServiceImpl implements TaskService {
 
     }
 
-    private final TaskinfoMapper taskinfoMapper;
-
-    private final TaskinfoLogsMapper taskinfoLogsMapper;
+    private final SchedulePersistenceService persistenceService;
 
     private final ObjectMapper objectMapper;
-
-    private boolean addTaskToDb(Task task){
-        boolean flag = false;
-        Taskinfo taskinfo = new Taskinfo();
-        BeanUtils.copyProperties(task,taskinfo);
-
-        taskinfo.setExecuteTime(new Date(task.getExecuteTime()));
-        taskinfoMapper.insert(taskinfo);
-
-        task.setTaskId(taskinfo.getTaskId());
-
-        TaskinfoLogs taskinfoLogs = new TaskinfoLogs();
-        BeanUtils.copyProperties(taskinfo,taskinfoLogs);
-        taskinfoLogs.setVersion(1);
-        taskinfoLogs.setStatus(ScheduleConstants.SCHEDULED);
-        taskinfoLogsMapper.insert(taskinfoLogs);
-        flag = true;
-        return flag;
-    }
 
     /**
      * Scheduled refresh mechanism - runs every minute
@@ -209,8 +149,14 @@ public class TaskServiceImpl implements TaskService {
                 Set<String> tasks = cacheService.zRangeByScore(futureKey, 0, System.currentTimeMillis());
 
                 if(!tasks.isEmpty()){
+                    org.springframework.util.StopWatch stopWatch = new org.springframework.util.StopWatch("Task-Migration");
+                    stopWatch.start("Pipeline_Batch_Migration");
+
                     // Batch migrate using Pipeline for better performance
                     cacheService.refreshWithPipeline(futureKey,topicKey,tasks);
+
+                    stopWatch.stop();
+                    log.info("Task migration completed, performance report:\n{}", stopWatch.prettyPrint());
                 }
             }
         }
@@ -234,7 +180,7 @@ public class TaskServiceImpl implements TaskService {
         // Reload tasks scheduled within next 5 minutes from database
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.MINUTE,5);
-        List<Taskinfo> taskinfos = taskinfoMapper.selectList(Wrappers.<Taskinfo>lambdaQuery().lt(Taskinfo::getExecuteTime, calendar.getTime()));
+        List<Taskinfo> taskinfos = persistenceService.findTasksBefore(calendar.getTime());
 
         if(taskinfos != null && taskinfos.size() != 0){
             for (Taskinfo taskinfo : taskinfos) {

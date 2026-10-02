@@ -1,37 +1,31 @@
 package com.news.model.user.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
 
-@Data
-@TableName("ap_user_follow")
+@Getter @Setter @NoArgsConstructor
+@Entity
+@Table(name = "ap_user_follow")
 public class ApUserFollow implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) @Column(name = "id")
     private Integer id;
-
-    @TableField("user_Id")
+    @Column(name = "user_id")
     private Integer userId;
-
-    @TableField("follow_id")
+    @Column(name = "follow_id")
     private Integer followId;
-
-    @TableField("follow_name")
+    @Column(name = "follow_name")
     private String followName;
-
-    @TableField("level")
+    @Column(name = "level")
     private Short level;
-
-    @TableField("is_notice")
+    @Column(name = "is_notice")
     private Short isNotice;
-
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
 }

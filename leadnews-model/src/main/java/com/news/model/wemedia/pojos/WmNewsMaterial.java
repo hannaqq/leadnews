@@ -1,10 +1,9 @@
 package com.news.model.wemedia.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 
@@ -13,8 +12,11 @@ import java.io.Serializable;
  *
  * @author itheima
  */
-@Data
-@TableName("wm_news_material")
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "wm_news_material")
 public class WmNewsMaterial implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -22,19 +24,21 @@ public class WmNewsMaterial implements Serializable {
     /**
      * Primary key
      */
-    @TableId(value = "id", type = IdType.AUTO)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer id;
 
     /**
      * Material ID
      */
-    @TableField("material_id")
+    @Column(name = "material_id")
     private Integer materialId;
 
     /**
      * News ID
      */
-    @TableField("news_id")
+    @Column(name = "news_id")
     private Integer newsId;
 
     /**
@@ -42,13 +46,13 @@ public class WmNewsMaterial implements Serializable {
      * 0: Content reference
      * 1: Cover image reference
      */
-    @TableField("type")
+    @Column(name = "type")
     private Short type;
 
     /**
      * Reference sort order
      */
-    @TableField("ord")
+    @Column(name = "ord")
     private Short ord;
 
 }

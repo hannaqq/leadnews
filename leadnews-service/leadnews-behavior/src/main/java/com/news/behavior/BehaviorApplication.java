@@ -1,10 +1,12 @@
 package com.news.behavior;
 
-import org.mybatis.spring.annotation.MapperScan;
+import com.news.model.behavior.pojos.ApBehaviorEntry;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+
 @SpringBootApplication
-@MapperScan("com.news.behavior.mapper")
+@EntityScan(basePackageClasses = ApBehaviorEntry.class)
 public class BehaviorApplication {
     public static void main(String[] args) {
         SpringApplication.run(BehaviorApplication.class, args);

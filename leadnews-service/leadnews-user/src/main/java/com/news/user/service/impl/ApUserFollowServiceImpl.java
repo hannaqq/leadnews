@@ -1,9 +1,7 @@
 package com.news.user.service.impl;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.news.apis.article.IArticleClient;
 import com.news.model.article.pojos.ApArticle;
 import com.news.model.behavior.dtos.FollowBehaviorDto;
@@ -13,11 +11,9 @@ import com.news.model.user.dtos.UserRelationDto;
 import com.news.model.user.pojos.ApUser;
 import com.news.model.user.pojos.ApUserFan;
 import com.news.model.user.pojos.ApUserFollow;
-import com.news.user.mapper.ApUserFanMapper;
-import com.news.user.mapper.ApUserFollowMapper;
+import com.news.user.repository.ApUserFollowRepository;
 import com.news.user.service.ApUserFollowService;
 import com.news.utils.thread.AppThreadLocalUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -26,11 +22,13 @@ import java.util.Date;
 import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 @RequiredArgsConstructor
-public class ApUserFollowServiceImpl extends ServiceImpl<ApUserFollowMapper,ApUserFollow> implements ApUserFollowService {
+public class ApUserFollowServiceImpl implements ApUserFollowService {
 
     private final IArticleClient iArticleClient;
 
-    private final ApUserFanMapper apUserFanMapper;
+    private final ApUserFollowRepository followRepository;
+
+    private final UserFollowPersistenceService persistenceService;
 
     private final KafkaTemplate kafkaTemplate;
 
@@ -44,10 +42,7 @@ public class ApUserFollowServiceImpl extends ServiceImpl<ApUserFollowMapper,ApUs
             return ResponseResult.errorResult(AppHttpCodeEnum.NEED_LOGIN);
         }
         if(dto.getOperation() == 0){
-            ApUserFollow one = getOne(Wrappers.<ApUserFollow>lambdaQuery()
-                    .eq(ApUserFollow::getUserId, user.getId())
-                    .eq(ApUserFollow::getFollowId, dto.getAuthorId()));
-            if(one != null){
+            if(followRepository.existsByUserIdAndFollowId(user.getId(), dto.getAuthorId())){
                 return ResponseResult.errorResult(AppHttpCodeEnum.HAVE_FOLLOWED);
             }
             ApUserFollow apUserFollow = new ApUserFollow();
@@ -59,8 +54,6 @@ public class ApUserFollowServiceImpl extends ServiceImpl<ApUserFollowMapper,ApUs
             apUserFollow.setIsNotice((short) 1);
             apUserFollow.setLevel((short)1);
             apUserFollow.setCreatedTime(new Date());
-            save(apUserFollow);
-
             ApUserFan apUserFan = new ApUserFan();
             apUserFan.setUserId(dto.getAuthorId());
             apUserFan.setFansId(user.getId());
@@ -70,20 +63,18 @@ public class ApUserFollowServiceImpl extends ServiceImpl<ApUserFollowMapper,ApUs
             apUserFan.setIsShieldLetter((short)0);
             apUserFan.setIsShieldComment((short)0);
             apUserFan.setCreatedTime(new Date());
-            apUserFanMapper.insert(apUserFan);
+            if (!persistenceService.createIfAbsent(apUserFollow, apUserFan)) {
+                return ResponseResult.errorResult(AppHttpCodeEnum.HAVE_FOLLOWED);
+            }
 
             FollowBehaviorDto followBehaviorDto = new FollowBehaviorDto();
             followBehaviorDto.setFollowId(dto.getAuthorId());
             followBehaviorDto.setArticleId(dto.getArticleId());
             followBehaviorDto.setUserId(user.getId());
-            kafkaTemplate.send("follow.behavior.topic", objectMapper.writeValueAsString(dto));
+            kafkaTemplate.send("follow.behavior.topic", objectMapper.writeValueAsString(followBehaviorDto));
 
         } else {
-            remove(Wrappers.<ApUserFollow>lambdaQuery().eq(ApUserFollow::getUserId, user.getId())
-                    .eq(ApUserFollow::getFollowId,dto.getAuthorId()));
-
-            apUserFanMapper.delete(Wrappers.<ApUserFan>lambdaQuery().eq(ApUserFan::getFansId,user.getId())
-                    .eq(ApUserFan::getUserId,dto.getAuthorId()));
+            persistenceService.delete(user.getId(), dto.getAuthorId());
         }
 
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS.getCode());

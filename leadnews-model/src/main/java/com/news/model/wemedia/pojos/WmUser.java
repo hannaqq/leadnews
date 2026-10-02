@@ -1,10 +1,9 @@
 package com.news.model.wemedia.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -14,8 +13,14 @@ import java.util.Date;
  *
  * @author itheima
  */
-@Data
-@TableName("wm_user")
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(
+        name = "wm_user",
+        uniqueConstraints = @UniqueConstraint(name = "uk_wm_user_ap_user_id", columnNames = "ap_user_id")
+)
 public class WmUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -23,55 +28,57 @@ public class WmUser implements Serializable {
     /**
      * Primary key
      */
-    @TableId(value = "id", type = IdType.AUTO)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer id;
 
-    @TableField("ap_user_id")
+    @Column(name = "ap_user_id")
     private Integer apUserId;
 
-    @TableField("ap_author_id")
+    @Column(name = "ap_author_id")
     private Integer apAuthorId;
 
     /**
      * Login username
      */
-    @TableField("name")
+    @Column(name = "name")
     private String name;
 
     /**
      * Login password
      */
-    @TableField("password")
+    @Column(name = "password")
     private String password;
 
     /**
      * Password salt
      */
-    @TableField("salt")
+    @Column(name = "salt")
     private String salt;
 
     /**
      * Nickname
      */
-    @TableField("nickname")
+    @Column(name = "nickname")
     private String nickname;
 
     /**
      * Avatar URL
      */
-    @TableField("image")
+    @Column(name = "image")
     private String image;
 
     /**
      * Location
      */
-    @TableField("location")
+    @Column(name = "location")
     private String location;
 
     /**
      * Phone number
      */
-    @TableField("phone")
+    @Column(name = "phone")
     private String phone;
 
     /**
@@ -80,13 +87,13 @@ public class WmUser implements Serializable {
      * 1: Permanently unavailable
      * 9: Available
      */
-    @TableField("status")
+    @Column(name = "status")
     private Short status;
 
     /**
      * Email address
      */
-    @TableField("email")
+    @Column(name = "email")
     private String email;
 
     /**
@@ -95,25 +102,25 @@ public class WmUser implements Serializable {
      * 1: Enterprise
      * 2: Sub-account
      */
-    @TableField("type")
+    @Column(name = "type")
     private Integer type;
 
     /**
      * Operation score
      */
-    @TableField("score")
+    @Column(name = "score")
     private Integer score;
 
     /**
      * Last login time
      */
-    @TableField("login_time")
+    @Column(name = "login_time")
     private Date loginTime;
 
     /**
      * Creation time
      */
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
 
 }

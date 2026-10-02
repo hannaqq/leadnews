@@ -1,24 +1,23 @@
 package com.news.behavior.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
-import com.news.behavior.mapper.ApFollowBehaviorMapper;
+import com.news.behavior.repository.ApFollowBehaviorRepository;
 import com.news.behavior.service.ApBehaviorEntryService;
 import com.news.behavior.service.ApFollowBehaviorService;
 import com.news.common.constants.SystemConstants;
 import com.news.model.behavior.dtos.FollowBehaviorDto;
 import com.news.model.behavior.pojos.ApBehaviorEntry;
 import com.news.model.behavior.pojos.ApFollowBehavior;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
-public class ApFollowBehaviorServiceImpl extends ServiceImpl<ApFollowBehaviorMapper, ApFollowBehavior> implements ApFollowBehaviorService {
+public class ApFollowBehaviorServiceImpl implements ApFollowBehaviorService {
 
     private final ApBehaviorEntryService apBehaviorEntryService;
+    private final ApFollowBehaviorRepository repository;
 
 
     @Override
@@ -30,7 +29,7 @@ public class ApFollowBehaviorServiceImpl extends ServiceImpl<ApFollowBehaviorMap
             apFollowBehavior.setArticleId(dto.getArticleId());
             apFollowBehavior.setEntryId(entry.getEntryId());
             apFollowBehavior.setCreatedTime(new Date());
-            save(apFollowBehavior);
+            repository.save(apFollowBehavior);
         }
     }
 }

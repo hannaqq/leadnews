@@ -1,4 +1,8 @@
+server:
+  port: 51602
 spring:
+  application:
+    name: leadnews-wemedia-gateway
   config:
     import: "consul:"
   cloud:
@@ -8,22 +12,24 @@ spring:
       discovery:
         prefer-ip-address: true
     gateway:
-      globalcors:
-        add-to-simple-url-handler-mapping: true
-        corsConfigurations:
-          '[/**]':
-            allowedHeaders: "*"
-            allowedOrigins: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - DELETE
-              - PUT
-              - OPTION
-      routes:
-        - id: wemedia
-          uri: lb://leadnews-wemedia
-          predicates:
-            - Path=/wemedia/**
-          filters:
-            - StripPrefix= 1
+      server:
+        webflux:
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            corsConfigurations:
+              '[/**]':
+                allowedHeaders: "*"
+                allowedOrigins: "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - DELETE
+                  - PUT
+                  - OPTIONS
+          routes:
+            - id: wemedia
+              uri: lb://leadnews-wemedia
+              predicates:
+                - Path=/wemedia/**
+              filters:
+                - StripPrefix=1

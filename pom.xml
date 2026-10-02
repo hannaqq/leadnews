@@ -16,7 +16,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.2.5</version>
+		<version>3.5.15</version>
 		<relativePath/>
 	</parent>
 	<groupId>com.news</groupId>
@@ -25,29 +25,20 @@
 	<name>leadnews</name>
 	<properties>
 		<java.version>17</java.version>
-		<spring.boot.version>3.2.5</spring.boot.version>
-		<spring.cloud.version>2023.0.1</spring.cloud.version>
-		<mysql.version>8.0.33</mysql.version>
-		<mybatis.version>3.5.1</mybatis.version>
-		<mybatis.spring.version>2.3.0</mybatis.spring.version>
-		<mybatis.plus.version>3.5.7</mybatis.plus.version>
+		<spring.boot.version>3.5.15</spring.boot.version>
+		<spring.cloud.version>2025.0.3</spring.cloud.version>
 		<com.alibaba.cloud>2021.0.5.0</com.alibaba.cloud>
 		<jwt.version>0.9.1</jwt.version>
-		<lombok.version>1.18.8</lombok.version>
-		<springdoc.version>2.5.0</springdoc.version>
+		<springdoc.version>2.8.13</springdoc.version>
 		<knife4j.version>4.1.0</knife4j.version>
 		<minio.version>8.5.4</minio.version>
 		<okhttp.version>4.10.0</okhttp.version>
 		<redis.version>3.1.2</redis.version>
-		<kafka.version>3.0.9</kafka.version>
-		<kafka.client.version>3.5.1</kafka.client.version>
-		<elasticsearch.version>8.8.2</elasticsearch.version>
 
 
 		<commons.io.version>2.6</commons.io.version>
 		<commons.codec.version>1.12</commons.codec.version>
 		<lang3.version>3.12.0</lang3.version>
-		<pagehelper.version>1.2.3</pagehelper.version>
 		<jsoup.version>1.10.2</jsoup.version>
 		<spring.jwt.version>1.0.9.RELEASE</spring.jwt.version>
 		<spring.boot.admin.version>2.1.6</spring.boot.admin.version>
@@ -57,7 +48,6 @@
 		<baidu.version>4.11.1</baidu.version>
 		<junit.version>4.12</junit.version>
 		<searchbox.version>6.3.1</searchbox.version>
-		<elasticsearch.version>7.2.0</elasticsearch.version>
 		<ali.core.version>4.1.1</ali.core.version>
 		<ali.green.version>3.4.1</ali.green.version>
 
@@ -74,7 +64,6 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.26</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
@@ -136,17 +125,6 @@
 				<version>${spring.boot.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>com.mysql</groupId>
-				<artifactId>mysql-connector-j</artifactId>
-				<version>${mysql.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>com.baomidou</groupId>
-				<artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-				<version>${mybatis.plus.version}</version>
-			</dependency>
-			<dependency>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-dependencies</artifactId>
 				<version>${spring.cloud.version}</version>
@@ -196,33 +174,7 @@
 				<artifactId>okhttp</artifactId>
 				<version>${okhttp.version}</version>
 			</dependency>
-			<dependency>
-				<groupId>org.apache.kafka</groupId>
-				<artifactId>kafka-clients</artifactId>
-				<version>${kafka.client.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.springframework.kafka</groupId>
-				<artifactId>spring-kafka</artifactId>
-				<version>${spring-kafka.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.elasticsearch</groupId>
-				<artifactId>elasticsearch</artifactId>
-				<version>${elasticsearch.version}</version>
-			</dependency>
-
-
 		</dependencies>
 	</dependencyManagement>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-		</plugins>
-	</build>
 
 </project>

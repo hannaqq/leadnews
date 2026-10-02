@@ -1,6 +1,8 @@
 server:
   port: 51802
 spring:
+  application:
+    name: leadnews-article
   cloud:
     consul:
       host: localhost
@@ -12,8 +14,17 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/leadnews_article?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 707161
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      leadnews:
+        snowflake:
+          worker-id: ${SNOWFLAKE_WORKER_ID:0}
+          datacenter-id: ${SNOWFLAKE_DATACENTER_ID:0}
   kafka:
     bootstrap-servers: localhost:9092
     producer:
@@ -24,12 +35,6 @@ spring:
       group-id: article-test
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-mybatis-plus:
-  mapper-locations: classpath*:mapper/*.xml
-  type-aliases-package: com.news.model.article.pojos
-  global-config:
-    datacenter-id: 1
-    workerId: 1
 minio:
   accessKey: minio
   secretKey: minio123

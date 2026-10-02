@@ -1,24 +1,37 @@
 package com.news.model.article.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
 
-@Data
-@TableName("ap_author")
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(
+        name = "ap_author",
+        uniqueConstraints = @UniqueConstraint(name = "uk_ap_author_user_id", columnNames = "user_id")
+)
 public class ApAuthor implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.AUTO)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer id;
 
-    @TableField("name")
+    @Column(name = "name")
     private String name;
 
     /**
@@ -26,16 +39,16 @@ public class ApAuthor implements Serializable {
      1 PARTNER
      2 CREATOR
      */
-    @TableField("type")
+    @Column(name = "type")
     private Short type;
 
-    @TableField("user_id")
+    @Column(name = "user_id")
     private Integer userId;
 
-    @TableField("wm_user_id")
+    @Column(name = "wm_user_id")
     private Integer wmUserId;
 
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
 
 }

@@ -1,50 +1,59 @@
 package com.news.model.admin.pojos;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.Date;
 
-@Data
-@TableName("ad_user")
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "ad_user")
 public class AdUser implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id",type = IdType.AUTO)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer id;
 
-    @TableField("name")
+    @Column(name = "name")
     private String name;
 
-    @TableField("password")
+    @Column(name = "password")
     private String password;
 
-    @TableField("salt")
+    @Column(name = "salt")
     private String salt;
 
-    @TableField("nickname")
+    @Column(name = "nickname")
     private String nickName;
 
-    @TableField("image")
+    @Column(name = "image")
     private String image;
 
-    @TableField("phone")
+    @Column(name = "phone")
     private String phone;
 
-    @TableField("status")
+    @Column(name = "status")
     private Short status;
 
-    @TableField("email")
+    @Column(name = "email")
     private String email;
 
-    @TableField("login_time")
+    @Column(name = "login_time")
     private Date loginTime;
 
-    @TableField("created_time")
+    @Column(name = "created_time")
     private Date createdTime;
 
 }

@@ -1,49 +1,68 @@
 package com.news.wemedia.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.model.wemedia.dtos.WmLoginDto;
 import com.news.model.wemedia.pojos.WmUser;
 import com.news.utils.common.AppJwtUtil;
-import com.news.wemedia.mapper.WmUserMapper;
+import com.news.wemedia.repository.WmUserRepository;
 import com.news.wemedia.service.WmUserService;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 @Service
-@Slf4j
-public class WmUserServiceImpl extends ServiceImpl<WmUserMapper, WmUser> implements WmUserService {
+@RequiredArgsConstructor
+public class WmUserServiceImpl implements WmUserService {
+    private final WmUserRepository repository;
+
     @Override
     public ResponseResult login(WmLoginDto dto) {
-        if(StringUtils.isBlank(dto.getName()) || StringUtils.isBlank(dto.getPassword())){
-            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID,"please insert username and password");
+        if (StringUtils.isBlank(dto.getName()) || StringUtils.isBlank(dto.getPassword())) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID, "please insert username and password");
         }
-
-        LambdaQueryWrapper<WmUser> lqw = new LambdaQueryWrapper<>();
-        WmUser wmUser = getOne(lqw.eq(WmUser::getName, dto.getName()));
-        if(wmUser == null){
+        WmUser user = repository.findByName(dto.getName()).orElse(null);
+        if (user == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST);
         }
-
-        String salt = wmUser.getSalt();
-        String password = dto.getPassword();
-        password = DigestUtils.md5DigestAsHex((password + salt).getBytes());
-        if(!password.equals(wmUser.getPassword())){
+        String password = DigestUtils.md5DigestAsHex(
+                (dto.getPassword() + user.getSalt()).getBytes(StandardCharsets.UTF_8));
+        if (!password.equals(user.getPassword())) {
             return ResponseResult.errorResult(AppHttpCodeEnum.LOGIN_PASSWORD_ERROR);
         }
-        String token = AppJwtUtil.getToken(wmUser.getId().longValue());
-        HashMap<String, Object> map = new HashMap<>();
-        map.put("token",token);
-        wmUser.setSalt("");
-        wmUser.setPassword("");
-        map.put("user",wmUser);
-        return ResponseResult.okResult(map);
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("token", AppJwtUtil.getToken(user.getId().longValue()));
+        user.setSalt("");
+        user.setPassword("");
+        data.put("user", user);
+        return ResponseResult.okResult(data);
+    }
 
+    @Override
+    public WmUser findByApUserId(Integer apUserId) {
+        return repository.findByApUserId(apUserId).orElse(null);
+    }
+
+    @Override
+    public WmUser save(WmUser user) {
+        if (user.getApUserId() == null) {
+            return repository.save(user);
+        }
+        WmUser existing = repository.findByApUserId(user.getApUserId()).orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+        user.setId(null);
+        try {
+            return repository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException exception) {
+            return repository.findByApUserId(user.getApUserId())
+                    .orElseThrow(() -> exception);
+        }
     }
 }

@@ -1,6 +1,8 @@
 server:
   port: 51805
 spring:
+  application:
+    name: leadnews-behavior
   cloud:
     consul:
       host: localhost
@@ -12,14 +14,15 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/leadnews_behavior?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 707161
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
       group-id: behavior-consumer-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-mybatis-plus:
-  mapper-locations: classpath*:mapper/*.xml
-  type-aliases-package: com.news.model.behavior.pojos

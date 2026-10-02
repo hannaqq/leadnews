@@ -12,6 +12,12 @@ spring:
       port: 8500
       discovery:
         prefer-ip-address: true
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 20000
+            readTimeout: 20000
     discovery:
       client:
         simple:
@@ -21,22 +27,15 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/leadnews_user?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 707161
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
   kafka:
     bootstrap-servers: localhost:9092
     producer:
       retries: 10
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
-mybatis-plus:
-  mapper-locations: classpath*:mapper/*.xml
-  type-aliases-package: com.news.model.user.pojos
-feign:
-  hystrix:
-    enabled: true
-  client:
-    config:
-      default:
-        connectTimeout: 20000
-        readTimeout: 20000

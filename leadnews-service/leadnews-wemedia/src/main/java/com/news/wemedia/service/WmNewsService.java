@@ -1,13 +1,12 @@
 package com.news.wemedia.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.wemedia.dtos.NewsAuthDto;
 import com.news.model.wemedia.dtos.WmNewsDto;
 import com.news.model.wemedia.dtos.WmNewsPageReqDto;
 import com.news.model.wemedia.pojos.WmNews;
 
-public interface WmNewsService extends IService<WmNews> {
+public interface WmNewsService {
     public ResponseResult getList(WmNewsPageReqDto dto);
 
     public ResponseResult submit(WmNewsDto dto);
@@ -25,5 +24,7 @@ public interface WmNewsService extends IService<WmNews> {
     public ResponseResult delNews(Integer id);
 
     public ResponseResult getOne(Integer id);
+
+    boolean existsByChannelId(Integer channelId);
 
 }
