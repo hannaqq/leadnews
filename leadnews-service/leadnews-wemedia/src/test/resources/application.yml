@@ -1,0 +1,20 @@
+spring:
+  config:
+    import: ""
+  cloud:
+    consul:
+      enabled: false
+  datasource:
+    url: jdbc:h2:mem:wemedia;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+minio:
+  accessKey: test
+  secretKey: test-secret
+  bucket: test
+  endpoint: http://localhost:9000
+  readPath: http://localhost:9000

@@ -1,0 +1,12 @@
+spring:
+  cloud:
+    consul:
+      enabled: false
+      discovery:
+        enabled: false
+  config:
+    import: "optional:consul:"
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
