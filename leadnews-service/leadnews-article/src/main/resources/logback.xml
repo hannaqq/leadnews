@@ -6,7 +6,7 @@
 
     <property value="d:/Qiao/logs" name="LOG_HOME"/>
 
-    <!-- Console 输出设置 -->
+    <!-- Console output settings. -->
 
 
 
@@ -15,7 +15,7 @@
 
     -<encoder>
 
-    <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+    <!-- Output format: date, thread name, five-character log level, message, and line break. -->
 
 
     <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
@@ -26,7 +26,7 @@
 
 </appender>
 
-    <!-- 按照每天生成日志文件 -->
+    <!-- Generate one log file per day. -->
 
 
 
@@ -35,7 +35,7 @@
 
     -<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 
-    <!--日志文件输出的文件名-->
+    <!-- Log file name pattern. -->
 
 
     <fileNamePattern>${LOG_HOME}/leadnews.%d{yyyy-MM-dd}.log</fileNamePattern>
@@ -51,23 +51,23 @@
 
 </appender>
 
-    <!-- 异步输出 -->
+    <!-- Asynchronous output. -->
 
 
 
     -<appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
 
-    <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+    <!-- Preserve all log events instead of discarding low-level events when the queue is 80% full. -->
 
 
     <discardingThreshold>0</discardingThreshold>
 
-    <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+    <!-- Set the queue capacity; this value affects performance and defaults to 256. -->
 
 
     <queueSize>512</queueSize>
 
-    <!-- 添加附加的appender,最多只能添加一个 -->
+    <!-- Attach the target appender; an AsyncAppender supports only one appender reference. -->
 
 
     <appender-ref ref="FILE"/>

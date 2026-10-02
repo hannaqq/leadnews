@@ -8,7 +8,7 @@ import java.util.Date;
 
 /**
  * <p>
- * 联想词表
+ * Search suggestion document.
  * </p>
  *
  * @author itheima
@@ -22,7 +22,7 @@ public class ApAssociateWords implements Serializable {
     private String id;
 
     /**
-     * 联想词
+     * Suggested search term.
      */
     private String associateWords;
 

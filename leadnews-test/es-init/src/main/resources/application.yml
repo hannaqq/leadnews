@@ -13,7 +13,7 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: none
-#自定义elasticsearch连接配置
+# Custom Elasticsearch connection settings.
 elasticsearch:
   host: localhost
   port: 9200

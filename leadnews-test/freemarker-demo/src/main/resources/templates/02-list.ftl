@@ -6,7 +6,7 @@
 </head>
 <body>
 
-<#-- list 数据的展示 -->
+<#-- Display list data. -->
 <b>展示list中的stu数据:</b>
 <br>
 <br>
@@ -43,7 +43,7 @@
 </table>
 <hr>
 
-<#-- Map 数据的展示 -->
+<#-- Display map data. -->
 <b>map数据的展示：</b>
 <br/><br/>
 <a href="###">方式一：通过map['keyname'].property</a><br/>

@@ -38,4 +38,8 @@ minio:
   bucket: leadnews
   endpoint: http://localhost:9000
   readPath: http://localhost:9000
+aws:
+  rekognition:
+    region: ${AWS_REGION:us-west-2}
+    min-confidence: ${AWS_REKOGNITION_MIN_CONFIDENCE:75}
 

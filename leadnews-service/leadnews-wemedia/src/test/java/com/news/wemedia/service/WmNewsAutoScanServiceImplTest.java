@@ -3,6 +3,7 @@ package com.news.wemedia.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.news.apis.article.IArticleClient;
 import com.news.file.service.FileStorageService;
+import com.news.model.common.dtos.ResponseResult;
 import com.news.model.wemedia.pojos.WmNews;
 import com.news.wemedia.repository.WmChannelRepository;
 import com.news.wemedia.repository.WmNewsRepository;
@@ -45,7 +46,8 @@ class WmNewsAutoScanServiceImplTest {
         when(newsRepository.findById(10)).thenReturn(Optional.of(news));
         when(sensitiveRepository.findAll()).thenReturn(List.of());
         when(storageService.downLoadFile("inline-image")).thenReturn(new byte[]{1});
-        when(moderationService.scanImageWithAwsRekognition(any(byte[].class))).thenReturn(false);
+        when(moderationService.scanImageWithAwsRekognition(any(byte[].class)))
+                .thenReturn(ModerationResult.REJECTED);
 
         service.autoScanWmNews(10);
 
@@ -71,6 +73,50 @@ class WmNewsAutoScanServiceImplTest {
         assertEquals(WmNews.Status.ADMIN_AUTH.getCode(), news.getStatus());
         assertEquals("image moderation unavailable; manual review required", news.getReason());
         verify(articleClient, never()).saveArticle(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void sendsNewsToManualReviewWhenRekognitionCannotDecide() {
+        WmNews news = submittedNews();
+        when(persistenceService.claimNewsForProcessing(10)).thenReturn(true);
+        when(persistenceService.transitionProcessingStatus(
+                10, WmNews.Status.ADMIN_AUTH.getCode(),
+                "image moderation unavailable; manual review required")).thenReturn(true);
+        when(newsRepository.findById(10)).thenReturn(Optional.of(news));
+        when(sensitiveRepository.findAll()).thenReturn(List.of());
+        when(storageService.downLoadFile("inline-image")).thenReturn(new byte[]{1});
+        when(moderationService.scanImageWithAwsRekognition(any(byte[].class)))
+                .thenReturn(ModerationResult.MANUAL_REVIEW);
+
+        service.autoScanWmNews(10);
+
+        assertEquals(WmNews.Status.ADMIN_AUTH.getCode(), news.getStatus());
+        verify(articleClient, never()).saveArticle(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void publishesNewsWhenRekognitionApprovesImage() {
+        WmNews news = submittedNews();
+        news.setUserId(20);
+        news.setChannelId(30);
+        news.setType((short) 1);
+        when(persistenceService.claimNewsForProcessing(10)).thenReturn(true);
+        when(newsRepository.findById(10)).thenReturn(Optional.of(news));
+        when(sensitiveRepository.findAll()).thenReturn(List.of());
+        when(storageService.downLoadFile("inline-image")).thenReturn(new byte[]{1});
+        when(moderationService.scanImageWithAwsRekognition(any(byte[].class)))
+                .thenReturn(ModerationResult.APPROVED);
+        when(userRepository.findById(20)).thenReturn(Optional.empty());
+        when(channelRepository.findById(30)).thenReturn(Optional.empty());
+        when(articleClient.saveArticle(any())).thenReturn(new ResponseResult<>(200, 100L));
+        when(persistenceService.completePublishing(10, 100L)).thenReturn(true);
+
+        service.autoScanWmNews(10);
+
+        verify(articleClient).saveArticle(any());
+        verify(persistenceService).completePublishing(10, 100L);
+        verify(persistenceService, never()).transitionProcessingStatus(
+                any(Integer.class), any(Short.class), any(String.class));
     }
 
     @Test

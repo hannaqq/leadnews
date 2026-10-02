@@ -18,6 +18,7 @@ import com.news.wemedia.repository.WmSensitiveRepository;
 import com.news.wemedia.repository.WmUserRepository;
 import com.news.wemedia.service.WmNewsAutoScanService;
 import com.news.wemedia.service.AwsModerationService;
+import com.news.wemedia.service.ModerationResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -137,13 +138,17 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
             for (String image : images) {
                 byte[] bytes = fileStorageService.downLoadFile(image);
 
-                // 使用 AWS Rekognition 进行图片安全审核和 OCR 识别
-                boolean isSafe = awsModerationService.scanImageWithAwsRekognition(bytes);
-                if(!isSafe){
+                // Use AWS Rekognition for image safety moderation.
+                ModerationResult result = awsModerationService.scanImageWithAwsRekognition(bytes);
+                if (result == ModerationResult.REJECTED) {
                     transitionFromProcessing(wmNews, WmNews.Status.FAIL.getCode(),
                             "AWS Rekognition: image contains explicit/sensitive content");
-                    flag = false;
-                    break;
+                    return false;
+                }
+                if (result == ModerationResult.MANUAL_REVIEW) {
+                    transitionFromProcessing(wmNews, WmNews.Status.ADMIN_AUTH.getCode(),
+                            "image moderation unavailable; manual review required");
+                    return false;
                 }
             }
         }catch (Exception e) {

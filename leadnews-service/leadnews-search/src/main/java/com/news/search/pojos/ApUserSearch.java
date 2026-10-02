@@ -8,7 +8,7 @@ import java.util.Date;
 
 /**
  * <p>
- * APP用户搜索信息表
+ * App user search history.
  * </p>
  * @author itheima
  */
