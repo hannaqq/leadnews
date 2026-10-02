@@ -37,11 +37,13 @@ flowchart TB
     Client["📱 Client Applications (App/Web)"]
     
     subgraph Layer1 ["1. API Gateway & Registry"]
+        direction LR
         SCG["🛡️ Spring Cloud Gateway"]
         Consul["🧭 Consul (Service Discovery)"]
     end
     
     subgraph Layer2 ["2. Core Microservices (7+ Services)"]
+        direction LR
         User["👤 User"]
         Admin["👔 Admin"]
         WeMedia["✍️ WeMedia"]
@@ -52,40 +54,43 @@ flowchart TB
     end
     
     subgraph Layer3 ["3. Event Bus & Caching"]
+        direction LR
         Kafka["🚄 Apache Kafka"]
         Redis["🔴 Redis (ZSet / Pipeline)"]
     end
     
     subgraph Layer4 ["4. Persistence & Search"]
+        direction LR
         MySQL["🐬 MySQL"]
         MongoDB["🍃 MongoDB"]
         ES["🔍 Elasticsearch"]
     end
     
     subgraph Layer5 ["5. AWS Cloud Services"]
+        direction LR
         S3["🪣 Amazon S3"]
         AI["🤖 AWS Rekognition"]
     end
 
-    %% Tightly packed downward routing
-    Client ==> SCG
+    %% Force Vertical Stacking via Subgraph-to-Subgraph routing
+    Client ===> Layer1
+    Layer1 ===> Layer2
     SCG -.->|Routing Data| Consul
-    SCG --> User & Admin & WeMedia & Article & Behavior & Schedule & Search
     
-    %% Highlight Workflows (Thick lines, standard length)
-    Article ==>|Publish Event| Kafka
-    Behavior ==>|Track Event| Kafka
-    Kafka ==>|Async Moderation| AI
+    %% Highlight Workflows (Thick lines)
+    Article ===>|Publish Event| Kafka
+    Behavior ===>|Track Event| Kafka
+    Kafka ===>|Async Moderation| AI
     
-    %% Standard Event Bus Fanning (Showing Kafka's multi-purpose role)
+    %% Standard Event Bus Fanning
     Kafka -.->|Sync Indexes| Search
     Kafka -.->|Log Aggregation| MongoDB
     
-    Schedule ==>|Task Migration| Redis
-    Schedule --> MySQL
+    Schedule ===>|Task Migration| Redis
+    Schedule ---> MySQL
     
-    Article ==>|SSG Upload| S3
-    Search --> ES
+    Article ===>|SSG Upload| S3
+    Search ---> ES
 ```
 
 ---
