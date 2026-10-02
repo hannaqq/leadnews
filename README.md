@@ -38,67 +38,6 @@ The system is strictly layered to separate routing, business logic, asynchronous
 
 <br>
 
-<details>
-<summary><b>👨‍💻 View Mermaid Source Code (For IDE Rendering)</b></summary>
-
-```mermaid
-flowchart TB
-    Client["📱 Client Applications (App/Web)"]
-    
-    subgraph Layer1 ["1. API Gateway & Registry"]
-        SCG["🛡️ Spring Cloud Gateway"]
-        Consul["🧭 Consul (Service Discovery)"]
-    end
-    
-    subgraph Layer2 ["2. Core Microservices (7+ Services)"]
-        User["👤 User"]
-        Admin["👔 Admin"]
-        WeMedia["✍️ WeMedia"]
-        Article["📄 Article"]
-        Behavior["🖱️ Behavior"]
-        Schedule["⏳ Schedule"]
-        Search["🔍 Search"]
-    end
-    
-    subgraph Layer3 ["3. Event Bus & Caching"]
-        Kafka["🚄 Apache Kafka"]
-        Redis["🔴 Redis (ZSet / Pipeline)"]
-    end
-    
-    subgraph Layer4 ["4. Persistence & Search"]
-        MySQL["🐬 MySQL"]
-        MongoDB["🍃 MongoDB"]
-        ES["🔍 Elasticsearch"]
-    end
-    
-    subgraph Layer5 ["5. AWS Cloud Services"]
-        S3["🪣 Amazon S3"]
-        AI["🤖 AWS Rekognition"]
-    end
-
-    %% Tightly packed downward routing
-    Client --> SCG
-    SCG -.->|Routing Data| Consul
-    SCG --> User & Admin & WeMedia & Article & Behavior & Schedule & Search
-    
-    %% Standard length pipelines (Thin lines for perfect layout)
-    Article -->|Publish Event| Kafka
-    Behavior -->|Track Event| Kafka
-    Kafka -->|Async Moderation| AI
-    
-    %% Standard Event Bus Fanning (Showing Kafka's multi-purpose role)
-    Kafka -.->|Sync Indexes| Search
-    Kafka -.->|Log Aggregation| MongoDB
-    
-    Schedule -->|Task Migration| Redis
-    Schedule --> MySQL
-    
-    Article -->|SSG Upload| S3
-    Search --> ES
-```
-
-</details>
-
 ---
 
 ## 💎 Under the Hood: Engineering Highlights
@@ -114,16 +53,42 @@ flowchart TB
 *   **Impact**: Resolved race conditions with sub-second precision and boosted migration throughput by **300%**.
 
 ```mermaid
-flowchart LR
-    DB[(MySQL)] -. "Future Task" .-> ZSet[("Redis ZSet<br/>(Score = Time)")]
+flowchart TB
+    %% 1. Submission Flow (Sequential)
+    Submit(["📥 Submit Task"]) --> AddTask["⚙️ addTask()"]
+    AddTask -->|1. Persist First| DB[("🗄️ MySQL<br/>(taskinfo)")]
+    DB -->|2. Evaluate Time| Router{"Execution Time?"}
     
-    subgraph BatchMigration ["⚡ Pipeline Migration (Every 1 min)"]
-        Fetch["ZRangeByScore<br/>(Find Expired)"] -->|ExecutePipelined| Move["ZRem + RPush"]
-    end
-    
-    ZSet --> BatchMigration
-    BatchMigration --> List[("Redis List<br/>(Ready Tasks)")]
-    List --> Consumer["Worker Node<br/>Executes Task"]
+    Router -.->|> 5m| Hold["(Hold in DB)"]
+    Router -->|<= 5m| ZSet[("⏳ Redis ZSet<br/>(future_*)")]
+    Router -->|Immediate| List[("🚀 Redis List<br/>(topic_*)")]
+
+    %% 2. The 1-min Pipeline Migration (ZSet -> List) - HIGHLIGHTED
+    ZSet -->|zRangeByScore (expired)| Refresh["🔥 refresh()<br/>@Scheduled(1m)"]
+    Refresh -->|Pipeline: zRem + rPush| List
+
+    %% 3. The 5-min DB Sync & Recovery
+    DB -.->|Query upcoming < 5m tasks| Reload["⚙️ reloadData()<br/>@Scheduled(5m)"]
+    Reload -.->|Clear & Rebuild| ZSet
+    Reload -.->|Clear & Rebuild| List
+
+    %% 4. Consumption Flow
+    List -->|lRightPop| Poll["⚙️ poll()"]
+    Poll -->|Return| Worker(["🚀 Execute Logic"])
+    Poll -->|Status = EXECUTED| DB
+
+    %% 5. Cancellation Flow
+    Abort(["🚫 Abort Request"]) -.-> Cancel["⚙️ cancelTask()"]
+    Cancel -.->|Status = CANCELLED| DB
+    Cancel -.->|If future: zRemove| ZSet
+    Cancel -.->|If ready: lRemove| List
+
+    %% UI Styling for Highlights
+    style Refresh fill:#ffecb3,stroke:#ff8f00,stroke-width:4px,color:#d84315
+    style Router fill:#fff3e0,stroke:#ff8f00,stroke-width:2px
+    style ZSet fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style List fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style DB fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 ```
 
 ### 3. Static Site Generation (SSG) for Extreme Read Scaling
