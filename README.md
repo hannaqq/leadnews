@@ -32,6 +32,15 @@ A highly scalable, cloud-native microservices ecosystem for digital publishing, 
 
 The system is strictly layered to separate routing, business logic, asynchronous messaging, and persistence.
 
+<div align="center">
+  <img src="./assets/architecture.png" alt="System Architecture Diagram" width="100%">
+</div>
+
+<br>
+
+<details>
+<summary><b>👨‍💻 View Mermaid Source Code (For IDE Rendering)</b></summary>
+
 ```mermaid
 flowchart TB
     Client["📱 Client Applications (App/Web)"]
@@ -68,25 +77,27 @@ flowchart TB
     end
 
     %% Tightly packed downward routing
-    Client ==> SCG
+    Client --> SCG
     SCG -.->|Routing Data| Consul
     SCG --> User & Admin & WeMedia & Article & Behavior & Schedule & Search
     
-    %% Highlight Workflows (Thick lines, standard length)
-    Article ==>|Publish Event| Kafka
-    Behavior ==>|Track Event| Kafka
-    Kafka ==>|Async Moderation| AI
+    %% Standard length pipelines (Thin lines for perfect layout)
+    Article -->|Publish Event| Kafka
+    Behavior -->|Track Event| Kafka
+    Kafka -->|Async Moderation| AI
     
     %% Standard Event Bus Fanning (Showing Kafka's multi-purpose role)
     Kafka -.->|Sync Indexes| Search
     Kafka -.->|Log Aggregation| MongoDB
     
-    Schedule ==>|Task Migration| Redis
+    Schedule -->|Task Migration| Redis
     Schedule --> MySQL
     
-    Article ==>|SSG Upload| S3
+    Article -->|SSG Upload| S3
     Search --> ES
 ```
+
+</details>
 
 ---
 
