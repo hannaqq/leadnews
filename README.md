@@ -13,7 +13,7 @@
 ![AWS](https://img.shields.io/badge/AWS-Rekognition-FF9900.svg)
 ![MinIO](https://img.shields.io/badge/MinIO-Object%20Storage-C7202C.svg)
 
-A highly scalable, cloud-native microservices ecosystem for digital publishing, content syndication, and user behavior analytics. Designed to handle extreme high-throughput traffic, this platform is routed by **Spring Cloud Gateway** and **Consul** for dynamic service discovery. It relies on **Apache Kafka** for event-driven decoupling, integrates **MinIO** and **AWS Rekognition**, and leverages a polyglot persistence layer (**MySQL, Redis, MongoDB, Elasticsearch**) to ensure sub-millisecond data delivery and robust consistency.
+A cloud-native microservices project for digital publishing, content distribution, and user behavior processing. The platform uses **Spring Cloud Gateway** and **Consul** for routing and service discovery, **Apache Kafka** for event-driven integration, **MinIO** and **AWS Rekognition** for media processing, and a polyglot persistence layer built on **MySQL, Redis, MongoDB, and Elasticsearch**.
 
 ---
 
@@ -87,14 +87,11 @@ flowchart TB
     style DB fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 ```
 
-### 2. Event-Driven Moderation Pipeline
-*   **Problem**: Image moderation via AWS Rekognition is an external operation and should not block the article submission request.
-*   **Solution**: Submitted articles are placed in the Schedule service's Redis-backed delayed-task queue. The Wemedia service polls ready tasks and performs moderation asynchronously, while conditional database updates protect each review state transition.
+### 2. Event-Driven Messaging with Kafka
+Kafka decouples cross-service updates from the main request flow. Article publication events update the Elasticsearch index, article up/down events synchronize publication state, and follow events update behavior data. This keeps producers independent from downstream consumers and allows these updates to be processed asynchronously.
 
-### 3. Static Site Generation for Extreme Read Scaling
-*   **Problem**: Serving popular articles triggered complex SQL `JOIN` queries, threatening database stability during traffic spikes.
-*   **Solution**: Engineered an SSG pipeline that pre-renders dynamic article data into static HTML files at publish time. These files are distributed to **MinIO**.
-*   **Impact**: Completely bypassed relational database reads for content delivery, supporting **10,000+ concurrent readers** with sub-millisecond page loads.
+### 3. Static Article Generation
+When an article is published, the Article service renders its content into a static HTML page with Freemarker and stores the generated file in MinIO. Readers can retrieve the pre-rendered page without rebuilding the article view from multiple database records on every request. After generation, the service also publishes a Kafka event to update the Elasticsearch index.
 
 ---
 
