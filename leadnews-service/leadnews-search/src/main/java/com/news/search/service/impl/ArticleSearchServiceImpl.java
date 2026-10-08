@@ -42,7 +42,7 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
         Integer userId = AppThreadLocalUtil.getUserId();
 
         if(userId != null && userSearchDto.getFromIndex() == 0){
-            apUserSearchService.insert(userSearchDto.getSearchWords(),userId);
+            apUserSearchService.recordSearchHistory(userSearchDto.getSearchWords(), userId);
         }
 
         SearchResponse<SearchArticleVo> response = elasticsearchClient.search(s ->s
@@ -76,7 +76,7 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
         List<Hit<SearchArticleVo>> hits = response.hits().hits();
         for (Hit<SearchArticleVo> hit : hits) {
             SearchArticleVo source = hit.source();
-            if(hit.highlight() != null && hit.highlight().size() != 0){
+            if(hit.highlight() != null && !hit.highlight().isEmpty()){
                 List<String> title = hit.highlight().get("title");
                 source.setTitle(title.stream().collect(Collectors.joining()));
             }

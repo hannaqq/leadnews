@@ -24,7 +24,7 @@ public class ApUserSearchServiceImpl implements ApUserSearchService {
 
     @Override
     @Async
-    public void insert(String keyword,Integer userId) {
+    public void recordSearchHistory(String keyword, Integer userId) {
         Query query = Query.query(Criteria.where("userId").is(userId).and("keyword").is(keyword));
         ApUserSearch apUserSearch = mongoTemplate.findOne(query, ApUserSearch.class);
 
