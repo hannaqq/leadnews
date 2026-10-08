@@ -6,13 +6,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.io.Serializable;
 import java.util.Date;
 
-/**
- * <p>
- * Search suggestion document.
- * </p>
- *
- * @author itheima
- */
 @Data
 @Document("ap_associate_words")
 public class ApAssociateWords implements Serializable {
@@ -21,9 +14,6 @@ public class ApAssociateWords implements Serializable {
 
     private String id;
 
-    /**
-     * Suggested search term.
-     */
     private String associateWords;
 
     private Date createdTime;

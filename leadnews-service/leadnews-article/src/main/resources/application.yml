@@ -20,11 +20,6 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: none
-    properties:
-      leadnews:
-        snowflake:
-          worker-id: ${SNOWFLAKE_WORKER_ID:0}
-          datacenter-id: ${SNOWFLAKE_DATACENTER_ID:0}
   kafka:
     bootstrap-servers: localhost:9092
     producer:

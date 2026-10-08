@@ -33,11 +33,6 @@ public class MinIOFileStorageService implements FileStorageService {
 
     private final static String separator = "/";
 
-    /**
-     * @param dirPath
-     * @param filename  yyyy/mm/dd/file.jpg
-     * @return
-     */
     public String builderFilePath(String dirPath,String filename) {
         StringBuilder stringBuilder = new StringBuilder(50);
         if(!StringUtils.isEmpty(dirPath)){

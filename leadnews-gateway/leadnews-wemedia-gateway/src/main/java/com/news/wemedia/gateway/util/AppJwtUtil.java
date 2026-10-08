@@ -72,8 +72,7 @@ public class AppJwtUtil {
 
     public static SecretKey generalKey() {
         byte[] encodedKey = Base64.getEncoder().encode(TOKEN_ENCRY_KEY.getBytes());
-        SecretKey key = new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
-        return key;
+        return new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
     }
 
     public static void main(String[] args) {

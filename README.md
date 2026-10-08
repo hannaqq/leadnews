@@ -1,7 +1,7 @@
 # 🚀 Distributed Microservices Content Platform (LeadNews)
 
 ![Java](https://img.shields.io/badge/Java-17-orange.svg)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-brightgreen.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.15-brightgreen.svg)
 ![Spring Data JPA](https://img.shields.io/badge/Spring%20Data%20JPA-Hibernate-59666C.svg)
 ![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-Gateway-blue.svg)
 ![Consul](https://img.shields.io/badge/Consul-Service%20Discovery-E74C3C.svg)
@@ -13,13 +13,13 @@
 ![AWS](https://img.shields.io/badge/AWS-Rekognition-FF9900.svg)
 ![MinIO](https://img.shields.io/badge/MinIO-Object%20Storage-C7202C.svg)
 
-A cloud-native microservices project for digital publishing, content distribution, and user behavior processing. The platform uses **Spring Cloud Gateway** and **Consul** for routing and service discovery, **Apache Kafka** for event-driven integration, **MinIO** and **AWS Rekognition** for media processing, and a polyglot persistence layer built on **MySQL, Redis, MongoDB, and Elasticsearch**.
+A cloud-native microservices project for open news publishing, content distribution, and user behavior processing. Readers can apply to become creators; approved applicants receive a Wemedia account for submitting and scheduling articles. The platform uses **Spring Cloud Gateway** and **Consul** for routing and service discovery, **Apache Kafka** for event-driven integration, **MinIO** and **AWS Rekognition** for media processing, and a polyglot persistence layer built on **MySQL, Redis, MongoDB, and Elasticsearch**.
 
 ---
 
 ## 🛠️ Tech Stack & Key Metrics
 
-*   **Backend Ecosystem**: Java 17, Spring Boot 3.2, Spring Data JPA, Spring Cloud Gateway, Consul (Service Discovery).
+*   **Backend Ecosystem**: Java 17, Spring Boot 3.5, Spring Data JPA, Spring Cloud Gateway, Consul (Service Discovery).
 *   **Data & Search Layer**: MySQL (Primary), MongoDB (Behavior Logs), Elasticsearch (Full-Text Search).
 *   **Streaming & Caching**: Apache Kafka, Redis (ZSet, List, Pipeline).
 *   **Infrastructure & Cloud**: MinIO (Static Hosting), AWS Rekognition (AI Moderation).
@@ -88,33 +88,62 @@ flowchart TB
 ```
 
 ### 2. Event-Driven Messaging with Kafka
-Kafka decouples cross-service updates from the main request flow. Article publication events update the Elasticsearch index, article up/down events synchronize publication state, and follow events update behavior data. This keeps producers independent from downstream consumers and allows these updates to be processed asynchronously.
+Kafka decouples cross-service article updates from the main request flow. Article publication events update the Elasticsearch index, while article up/down events synchronize publication state. User reactions and creator follows are synchronous, transactional operations owned directly by the Behavior service.
 
 ### 3. Static Article Generation
 When an article is published, the Article service renders its content into a static HTML page with Freemarker and stores the generated file in MinIO. Readers can retrieve the pre-rendered page without rebuilding the article view from multiple database records on every request. After generation, the service also publishes a Kafka event to update the Elasticsearch index.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Backend Quick Start
+
+This repository contains the backend services only. The frontend build artifacts and machine-specific Nginx configuration are not included.
 
 ### Prerequisites
-- JDK 17 & Maven 3.8+
-- Docker & Docker Compose
-- Consul (Port 8500)
-- AWS credentials with `rekognition:DetectModerationLabels` permission for real image moderation
 
-Configure credentials locally with `aws configure`. The Wemedia service uses `us-west-2` by default; set `AWS_REGION` to use another region. Credentials are loaded through the AWS SDK default credential chain and must not be committed to this repository.
+- JDK 17 and Maven 3.8+
+- Docker and Docker Compose
+- MySQL with the required LeadNews schemas and tables
+- `MYSQL_PASSWORD` set in the local environment; `MYSQL_USERNAME` defaults to `root`
 
-### Infrastructure Setup
-Spin up the required middleware using the provided compose file:
+AWS credentials with `rekognition:DetectModerationLabels` permission are optional and are required only for real image moderation. Configure them locally with `aws configure`. The Wemedia service uses `us-west-2` by default; set `AWS_REGION` to use another region. Credentials are loaded through the AWS SDK default credential chain and must not be committed to this repository.
+
+### Start Infrastructure
+
+From the repository root, start Consul, Redis, ZooKeeper, Kafka, Elasticsearch, MongoDB, and MinIO:
+
 ```bash
-docker-compose -f docker/docker-compose.yml up -d
+docker compose up -d
 ```
-*(Ensure MySQL, Redis, MongoDB, Elasticsearch, Kafka, and Consul are running healthily).*
 
-### Bootstrapping Services
-Start the API Gateway first, followed by the core microservices:
-1. `leadnews-gateway` (Port 51601)
-2. `leadnews-user` (Port 51801)
-3. `leadnews-article` (Port 51802)
-4. *(Start additional services as needed via IntelliJ IDEA Run Dashboard).*
+Verify the containers before starting the applications:
+
+```bash
+docker compose ps
+```
+
+MySQL is not included in the Compose file and must be started separately. The files under `scripts/database` are incremental migrations, not a complete baseline schema.
+
+### Start Applications
+
+After the infrastructure is ready, start the seven business services:
+
+1. `leadnews-schedule` (51701)
+2. `leadnews-user` (51801)
+3. `leadnews-article` (51802)
+4. `leadnews-wemedia` (51803)
+5. `leadnews-search` (51804)
+6. `leadnews-behavior` (51805)
+7. `leadnews-admin` (51806)
+
+Then start the three gateways:
+
+1. `leadnews-app-gateway` (51601)
+2. `leadnews-wemedia-gateway` (51602)
+3. `leadnews-admin-gateway` (51603)
+
+The applications register with Consul at `http://localhost:8500`. Starting a gateway before its downstream services is possible, but requests will fail until the required services have registered and become healthy.
+
+### Optional Frontend Proxy
+
+When using a separately obtained frontend build, Nginx can serve its static assets and reverse-proxy API requests to the three gateways listed above. The frontend assets and Nginx configuration are intentionally excluded because they are external, machine-specific resources. The backend can be exercised directly through the gateway ports without Nginx.

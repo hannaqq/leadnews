@@ -25,9 +25,7 @@ public class AdUserServiceImpl implements AdUserService {
     @Override
     public ResponseResult login(AdUserDto dto) {
         if(StringUtils.isBlank(dto.getName()) || StringUtils.isBlank(dto.getPassword())){
-            Map<String,Object> map = new HashMap<>();
-            map.put("token", AppJwtUtil.getToken(0L));
-            return ResponseResult.okResult(map);
+            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
         }
         AdUser adUser = adUserRepository.findByName(dto.getName()).orElse(null);
         if(adUser == null){
@@ -39,7 +37,7 @@ public class AdUserServiceImpl implements AdUserService {
         if(!pwd.equals(adUser.getPassword())){
             return ResponseResult.errorResult(AppHttpCodeEnum.LOGIN_PASSWORD_ERROR);
         }
-        String token = AppJwtUtil.getToken(adUser.getId().longValue());
+        String token = AppJwtUtil.getToken(adUser.getId().longValue(), "admin");
         Map<String,Object> map = new HashMap<>();
         map.put("token", token);
         adUser.setPassword("");

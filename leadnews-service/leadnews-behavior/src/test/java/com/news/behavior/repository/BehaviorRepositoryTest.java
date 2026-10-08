@@ -1,7 +1,8 @@
 package com.news.behavior.repository;
 
-import com.news.model.behavior.pojos.ApBehaviorEntry;
-import com.news.model.behavior.pojos.ApFollowBehavior;
+import com.news.model.behavior.enums.ReactionType;
+import com.news.model.behavior.pojos.ApArticleReaction;
+import com.news.model.behavior.pojos.ApUserFollow;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -9,43 +10,49 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
 class BehaviorRepositoryTest {
 
     @Autowired
-    private ApBehaviorEntryRepository entryRepository;
+    private ApArticleReactionRepository reactionRepository;
 
     @Autowired
-    private ApFollowBehaviorRepository followRepository;
+    private ApUserFollowRepository followRepository;
 
     @Test
-    void findsEntryByExternalIdAndType() {
-        ApBehaviorEntry entry = new ApBehaviorEntry();
-        entry.setEntryId(42);
-        entry.setType((short) 1);
-        entry.setCreatedTime(new Date());
-        entryRepository.saveAndFlush(entry);
+    void findsReactionByUserAndArticle() {
+        Date now = new Date();
+        ApArticleReaction reaction = new ApArticleReaction();
+        reaction.setUserId(42);
+        reaction.setArticleId(100L);
+        reaction.setReactionType(ReactionType.LIKE);
+        reaction.setCreatedTime(now);
+        reaction.setUpdatedTime(now);
+        reactionRepository.saveAndFlush(reaction);
 
-        ApBehaviorEntry result = entryRepository.findByEntryIdAndType(42, (short) 1)
+        ApArticleReaction result = reactionRepository.findByUserIdAndArticleId(42, 100L)
                 .orElseThrow();
 
-        assertTrue(result.getId() > 0);
-        assertEquals(42, result.getEntryId());
+        assertTrue(result.getId() > 0L);
+        assertEquals(ReactionType.LIKE, result.getReactionType());
     }
 
     @Test
-    void persistsFollowBehaviorWithIdentityId() {
-        ApFollowBehavior follow = new ApFollowBehavior();
-        follow.setEntryId(42);
-        follow.setArticleId(100L);
-        follow.setFollowId(7);
+    void enforcesUniqueFollowRelation() {
+        ApUserFollow follow = new ApUserFollow();
+        follow.setUserId(42);
+        follow.setCreatorId(7);
         follow.setCreatedTime(new Date());
+        followRepository.saveAndFlush(follow);
 
-        ApFollowBehavior saved = followRepository.saveAndFlush(follow);
+        ApUserFollow duplicate = new ApUserFollow();
+        duplicate.setUserId(42);
+        duplicate.setCreatorId(7);
+        duplicate.setCreatedTime(new Date());
 
-        assertTrue(saved.getId() > 0);
-        assertEquals(7, saved.getFollowId());
+        assertThrows(RuntimeException.class, () -> followRepository.saveAndFlush(duplicate));
     }
 }

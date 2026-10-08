@@ -36,7 +36,7 @@ public class WmUserServiceImpl implements WmUserService {
             return ResponseResult.errorResult(AppHttpCodeEnum.LOGIN_PASSWORD_ERROR);
         }
         HashMap<String, Object> data = new HashMap<>();
-        data.put("token", AppJwtUtil.getToken(user.getId().longValue()));
+        data.put("token", AppJwtUtil.getToken(user.getId().longValue(), "wemedia"));
         user.setSalt("");
         user.setPassword("");
         data.put("user", user);
@@ -46,6 +46,11 @@ public class WmUserServiceImpl implements WmUserService {
     @Override
     public WmUser findByApUserId(Integer apUserId) {
         return repository.findByApUserId(apUserId).orElse(null);
+    }
+
+    @Override
+    public WmUser findById(Integer id) {
+        return repository.findById(id).orElse(null);
     }
 
     @Override

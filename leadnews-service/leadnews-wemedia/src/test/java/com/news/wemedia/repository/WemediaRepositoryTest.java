@@ -5,7 +5,7 @@ import com.news.model.wemedia.pojos.WmMaterial;
 import com.news.model.wemedia.pojos.WmNews;
 import com.news.model.wemedia.pojos.WmNewsMaterial;
 import com.news.model.wemedia.pojos.WmUser;
-import com.news.wemedia.service.impl.WemediaPersistenceService;
+import com.news.wemedia.service.transaction.WmNewsTransactionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -23,13 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import(WemediaPersistenceService.class)
+@Import(WmNewsTransactionService.class)
 class WemediaRepositoryTest {
     @Autowired private WmMaterialRepository materialRepository;
     @Autowired private WmNewsRepository newsRepository;
     @Autowired private WmNewsMaterialRepository relationRepository;
     @Autowired private WmUserRepository userRepository;
-    @Autowired private WemediaPersistenceService persistenceService;
+    @Autowired private WmNewsTransactionService transactionService;
 
     @Test
     void savesMaterialRelationsInRequestOrder() {
@@ -37,7 +37,7 @@ class WemediaRepositoryTest {
         WmMaterial second = material("second");
         materialRepository.saveAll(List.of(first, second));
 
-        WmNews saved = persistenceService.saveNewsAndRelations(
+        WmNews saved = transactionService.saveNewsAndRelations(
                 news(), 1, List.of("second", "first"), List.of(), (short) 0, (short) 1);
 
         List<WmNewsMaterial> relations =
@@ -54,7 +54,7 @@ class WemediaRepositoryTest {
     void rollsBackNewsWhenAnyMaterialIsMissing() {
         materialRepository.save(material("first"));
 
-        assertThrows(CustomException.class, () -> persistenceService.saveNewsAndRelations(
+        assertThrows(CustomException.class, () -> transactionService.saveNewsAndRelations(
                 news(), 1, List.of("first", "missing"), List.of(), (short) 0, (short) 1));
 
         assertTrue(newsRepository.findAll().isEmpty());
@@ -98,7 +98,7 @@ class WemediaRepositoryTest {
         material.setUserId(2);
         materialRepository.save(material);
 
-        assertThrows(CustomException.class, () -> persistenceService.saveNewsAndRelations(
+        assertThrows(CustomException.class, () -> transactionService.saveNewsAndRelations(
                 news(), 1, List.of("private"), List.of(), (short) 0, (short) 1));
     }
 
@@ -112,33 +112,24 @@ class WemediaRepositoryTest {
         update.setUserId(1);
         update.setTitle("hijacked");
 
-        assertThrows(RuntimeException.class, () -> persistenceService.saveNewsAndRelations(
+        assertThrows(RuntimeException.class, () -> transactionService.saveNewsAndRelations(
                 update, 1, List.of(), List.of(), (short) 0, (short) 1));
 
         assertEquals("title", newsRepository.findById(existing.getId()).orElseThrow().getTitle());
     }
 
     @Test
-    void allowsOnlyOneWorkerToClaimSubmittedNews() {
-        WmNews news = newsRepository.saveAndFlush(news());
+    void publishedNewsCannotBeEditedWithoutVersioning() {
+        WmNews published = news();
+        published.setStatus(WmNews.Status.PUBLISHED.getCode());
+        published = newsRepository.saveAndFlush(published);
+        int publishedId = published.getId();
+        WmNews update = new WmNews();
+        update.setId(publishedId);
+        update.setTitle("edited");
 
-        assertTrue(persistenceService.claimNewsForProcessing(news.getId()));
-        assertTrue(!persistenceService.claimNewsForProcessing(news.getId()));
-        assertEquals(WmNews.Status.PROCESSING.getCode(),
-                newsRepository.findById(news.getId()).orElseThrow().getStatus());
-    }
-
-    @Test
-    void doesNotOverwriteStatusChangedAfterProcessingStarted() {
-        WmNews news = newsRepository.saveAndFlush(news());
-        assertTrue(persistenceService.claimNewsForProcessing(news.getId()));
-        assertTrue(persistenceService.transitionProcessingStatus(
-                news.getId(), WmNews.Status.ADMIN_AUTH.getCode(), "manual review"));
-
-        assertTrue(!persistenceService.completePublishing(news.getId(), 99L));
-        WmNews unchanged = newsRepository.findById(news.getId()).orElseThrow();
-        assertEquals(WmNews.Status.ADMIN_AUTH.getCode(), unchanged.getStatus());
-        assertEquals(null, unchanged.getArticleId());
+        assertThrows(RuntimeException.class, () -> transactionService.saveNewsAndRelations(
+                update, 1, List.of(), List.of(), (short) 0, (short) 1));
     }
 
     private static WmMaterial material(String url) {

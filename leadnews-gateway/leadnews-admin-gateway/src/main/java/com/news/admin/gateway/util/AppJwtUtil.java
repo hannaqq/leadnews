@@ -40,7 +40,7 @@ public class AppJwtUtil {
     public static Claims getClaimsBody(String token) {
         try {
             return getJws(token).getBody();
-        }catch (ExpiredJwtException e){
+        } catch (ExpiredJwtException e) {
             return null;
         }
     }
@@ -72,8 +72,7 @@ public class AppJwtUtil {
 
     public static SecretKey generalKey() {
         byte[] encodedKey = Base64.getEncoder().encode(TOKEN_ENCRY_KEY.getBytes());
-        SecretKey key = new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
-        return key;
+        return new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
     }
 
     public static void main(String[] args) {

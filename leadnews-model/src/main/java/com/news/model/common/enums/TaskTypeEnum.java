@@ -7,7 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum TaskTypeEnum {
 
-    NEWS_SCAN_TIME(1001, 1,"news scan time"),
+    NEWS_PUBLISH(1003, 1,"publish approved news"),
     REMOTEERROR(1002, 2,"error, try again");
     private final int taskType;
     private final int priority;

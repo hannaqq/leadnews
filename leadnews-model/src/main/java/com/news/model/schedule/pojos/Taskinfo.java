@@ -1,6 +1,5 @@
 package com.news.model.schedule.pojos;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -16,13 +15,6 @@ import java.util.Date;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
-/**
- * <p>
- * 
- * </p>
- *
- * @author itheima
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,21 +27,16 @@ public class Taskinfo implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "task_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long taskId;
 
-    @Column(name = "execute_time")
     private Date executeTime;
 
     @Lob
-    @Column(name = "parameters")
     private byte[] parameters;
 
-    @Column(name = "priority")
     private Integer priority;
 
-    @Column(name = "task_type")
     private Integer taskType;
 
 

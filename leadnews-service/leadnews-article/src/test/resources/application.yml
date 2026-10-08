@@ -12,11 +12,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
-    properties:
-      leadnews:
-        snowflake:
-          worker-id: 0
-          datacenter-id: 0
 minio:
   accessKey: test
   secretKey: test-secret

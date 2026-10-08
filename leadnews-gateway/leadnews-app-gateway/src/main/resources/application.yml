@@ -27,6 +27,13 @@ spring:
                   - PUT
                   - OPTIONS
           routes:
+            - id: legacy-user-follow
+              uri: lb://leadnews-behavior
+              predicates:
+                - Path=/user/api/v1/user/user_follow
+                - Method=POST
+              filters:
+                - SetPath=/api/v1/user/user_follow
             - id: user
               uri: lb://leadnews-user
               predicates:

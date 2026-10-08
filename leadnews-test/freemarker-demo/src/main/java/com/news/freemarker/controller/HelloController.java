@@ -36,7 +36,6 @@ public class HelloController {
         stu2.setName("bb");
         stu2.setAge(19);
         stu2.setMoney(200.1f);
-        //stu2.setBirthday(new Date());
 
         ArrayList<Student> stus = new ArrayList<>();
         stus.add(stu1);

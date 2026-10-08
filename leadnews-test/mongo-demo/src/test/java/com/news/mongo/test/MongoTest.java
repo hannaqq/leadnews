@@ -2,6 +2,7 @@ package com.news.mongo.test;
 
 import com.news.mongo.pojo.ApAssociateWords;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,6 +17,7 @@ import java.util.List;
 
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
+@EnabledIfEnvironmentVariable(named = "RUN_MONGO_INTEGRATION_TESTS", matches = "true")
 public class MongoTest {
     @Autowired
     private MongoTemplate mongoTemplate;

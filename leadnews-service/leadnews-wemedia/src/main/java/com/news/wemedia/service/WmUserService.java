@@ -9,6 +9,8 @@ public interface WmUserService {
 
     WmUser findByApUserId(Integer apUserId);
 
+    WmUser findById(Integer id);
+
     WmUser save(WmUser user);
 
 }

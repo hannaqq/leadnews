@@ -10,14 +10,12 @@ import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.model.search.dtos.UserSearchDto;
 import com.news.model.search.vos.SearchArticleVo;
-import com.news.model.user.pojos.ApUser;
 import com.news.search.service.ApUserSearchService;
 import com.news.search.service.ArticleSearchService;
 import com.news.utils.thread.AppThreadLocalUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -41,10 +39,10 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
             return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
         }
 
-        ApUser user = AppThreadLocalUtil.getUser();
+        Integer userId = AppThreadLocalUtil.getUserId();
 
-        if(user != null && userSearchDto.getFromIndex() == 0){
-            apUserSearchService.insert(userSearchDto.getSearchWords(),user.getId());
+        if(userId != null && userSearchDto.getFromIndex() == 0){
+            apUserSearchService.insert(userSearchDto.getSearchWords(),userId);
         }
 
         SearchResponse<SearchArticleVo> response = elasticsearchClient.search(s ->s

@@ -2,8 +2,8 @@
 
 schedule_service:
   base_url: "http://127.0.0.1:51701"
-  # TaskTypeEnum.NEWS_SCAN_TIME
-  task_type: 1001
+  # TaskTypeEnum.NEWS_PUBLISH
+  task_type: 1003
   priority: 1
 
 mysql:

@@ -1,6 +1,5 @@
 package com.news.wemedia.interceptor;
 
-import com.news.model.wemedia.pojos.WmUser;
 import com.news.utils.thread.WmThreadLocalUtil;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -13,9 +12,7 @@ public class WmTokenInterceptor implements HandlerInterceptor {
             throws Exception {
         String userId = request.getHeader("userId");
         if (userId != null) {
-            WmUser wmUser = new WmUser();
-            wmUser.setId(Integer.valueOf(userId));
-            WmThreadLocalUtil.setUser(wmUser);
+            WmThreadLocalUtil.setUserId(Integer.valueOf(userId));
         }
         return true;
     }

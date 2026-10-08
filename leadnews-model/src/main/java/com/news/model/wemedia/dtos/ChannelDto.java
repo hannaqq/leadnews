@@ -6,7 +6,6 @@ import lombok.Data;
 public class ChannelDto {
     private String name;
 
-    //private Boolean status;
     private Integer page;
     private Integer size;
     public void checkParam(){

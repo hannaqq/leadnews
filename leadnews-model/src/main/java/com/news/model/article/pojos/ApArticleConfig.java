@@ -1,8 +1,8 @@
 package com.news.model.article.pojos;
 
-import com.news.model.persistence.SnowflakeId;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -30,32 +30,18 @@ public class ApArticleConfig implements Serializable {
     }
 
     @Id
-    @SnowflakeId
-    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
-    @Column(name = "article_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long articleId;
 
-    /**
-     * true: can comment   1
-     * false: can't comment  0
-     */
-    @Column(name = "is_comment")
     private Boolean isComment;
 
-    /**
-     * true: can be forwarded   1
-     * false: can not be forwarded  0
-     */
-    @Column(name = "is_forward")
     private Boolean isForward;
 
-    @Column(name = "is_down")
     private Boolean isDown;
 
-    @Column(name = "is_delete")
     private Boolean isDelete;
 }

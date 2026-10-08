@@ -1,8 +1,8 @@
 package com.news.article.listener;
 
 import com.news.article.service.ApArticleConfigService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import io.micrometer.core.instrument.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -22,8 +22,7 @@ public class ArticleUpDownListener {
 
 
     @KafkaListener(topics = "wm.news.topic.down.or.up")
-    @SneakyThrows
-    public void onMessage(String message){
+    public void onMessage(String message) throws JsonProcessingException {
         log.info("receive message:{}",message);
         if(StringUtils.isNotBlank(message)){
             Map map = objectMapper.readValue(message, Map.class);

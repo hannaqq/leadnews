@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import com.news.model.wemedia.dtos.SensitiveDto;
 import com.news.model.wemedia.pojos.WmSensitive;
 import com.news.wemedia.service.WmSensitiveService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

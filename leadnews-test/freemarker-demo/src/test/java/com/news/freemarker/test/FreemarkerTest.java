@@ -6,13 +6,15 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -21,13 +23,18 @@ import java.util.Map;
 @SpringBootTest(classes = FreemarkerDemoApplication.class)
 @ExtendWith(SpringExtension.class)
 public class FreemarkerTest {
+   @TempDir
+   Path tempDirectory;
+
    @Autowired
    private Configuration configuration;
 
    @Test
    public void test() throws IOException, TemplateException {
     Template template = configuration.getTemplate("02-list.ftl");
-    template.process(getData(),new FileWriter("d:/news/list.html"));
+    try (var writer = Files.newBufferedWriter(tempDirectory.resolve("list.html"))) {
+        template.process(getData(), writer);
+    }
 
    }
 
@@ -43,7 +50,6 @@ public class FreemarkerTest {
     stu2.setName("bb");
     stu2.setAge(19);
     stu2.setMoney(200.1f);
-    //stu2.setBirthday(new Date());
 
     ArrayList<Student> stus = new ArrayList<>();
     stus.add(stu1);

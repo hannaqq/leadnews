@@ -8,5 +8,5 @@ public class ScheduleConstants {
 
     public static final int CANCELLED=2;
     public static String FUTURE="future_";
-    public static String TOPIC="topic_";
+    public static String READY="ready_";
 }

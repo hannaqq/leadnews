@@ -1,7 +1,7 @@
 package com.news.article.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import com.news.article.repository.ApArticleRepository;
 import com.news.article.service.ArticleFreemarkerService;
 import com.news.common.constants.ArticleConstants;
@@ -42,7 +42,6 @@ public class ArticleFreemarkerServiceImpl implements ArticleFreemarkerService {
 
     @Override
     @Async
-    @SneakyThrows
     public void buildArticleToMinIO(ApArticle apArticle, String content) {
 
         if(StringUtils.isNotBlank(content)){
@@ -67,16 +66,22 @@ public class ArticleFreemarkerServiceImpl implements ArticleFreemarkerService {
 
     }
 
-    @SneakyThrows
     private void createArticleESIndex(ApArticle apArticle, String content, String path) {
         SearchArticleVo searchArticleVo = new SearchArticleVo();
         BeanUtils.copyProperties(apArticle, searchArticleVo);
         searchArticleVo.setContent(content);
         searchArticleVo.setStaticUrl(path);
 
-        kafkaTemplate.send(ArticleConstants.ARTICLE_ES_SYNC_TOPIC, objectMapper.writeValueAsString(searchArticleVo));
-
-
-
+        try {
+            String message = objectMapper.writeValueAsString(searchArticleVo);
+            kafkaTemplate.send(ArticleConstants.ARTICLE_ES_SYNC_TOPIC, message)
+                    .whenComplete((result, exception) -> {
+                        if (exception != null) {
+                            log.error("Failed to publish article index event for article {}", apArticle.getId(), exception);
+                        }
+                    });
+        } catch (JsonProcessingException exception) {
+            log.error("Failed to serialize article index event for article {}", apArticle.getId(), exception);
+        }
     }
 }

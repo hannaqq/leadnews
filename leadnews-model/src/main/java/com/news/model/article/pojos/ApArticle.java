@@ -1,10 +1,11 @@
 package com.news.model.article.pojos;
 
-import com.news.model.persistence.SnowflakeId;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,29 +19,29 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "ap_article")
+@Table(
+        name = "ap_article",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_ap_article_source_news_id",
+                columnNames = "source_news_id"))
 public class ApArticle implements Serializable {
 
     @Id
-    @SnowflakeId
-    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
-    @Column(name = "title")
+    private Integer sourceNewsId;
+
     private String title;
 
-    @Column(name = "author_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long authorId;
 
-    @Column(name = "author_name")
     private String authorName;
 
-    @Column(name = "channel_id")
     private Integer channelId;
 
-    @Column(name = "channel_name")
     private String channelName;
 
     /**
@@ -49,7 +50,6 @@ public class ApArticle implements Serializable {
      * 1: Single image
      * 2: Multiple images
      */
-    @Column(name = "layout")
     private Short layout;
 
     /**
@@ -60,77 +60,35 @@ public class ApArticle implements Serializable {
      * 3: Featured article
      * 4: VIP article
      */
-    @Column(name = "flag")
     private Byte flag;
 
-    /**
-     * Article cover images (comma-separated)
-     */
-    @Column(name = "images")
     private String images;
 
-    /**
-     * Article tags
-     */
-    @Column(name = "labels")
     private String labels;
 
-    /**
-     * Like count
-     */
-    @Column(name = "likes")
     private Integer likes;
 
-    /**
-     * Collection count
-     */
-    @Column(name = "collection")
     private Integer collection;
 
-    /**
-     * Comment count
-     */
-    @Column(name = "comment")
     private Integer comment;
 
-    /**
-     * View count
-     */
-    @Column(name = "views")
     private Integer views;
 
 
-    @Column(name = "province_id")
     private Integer provinceId;
 
-    @Column(name = "city_id")
     private Integer cityId;
 
-    @Column(name = "county_id")
     private Integer countyId;
 
 
-    @Column(name = "created_time")
     private Date createdTime;
 
-    @Column(name = "publish_time")
     private Date publishTime;
 
-    /**
-     * Synchronization status
-     */
-    @Column(name = "sync_status")
     private Boolean syncStatus;
 
-    /**
-     * Article origin
-     */
-    @Column(name = "origin")
     private Boolean origin;
 
-    /**
-     * Static page URL
-     */
-    @Column(name = "static_url")
     private String staticUrl;
 }

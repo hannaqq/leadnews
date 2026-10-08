@@ -1,11 +1,15 @@
 package com.news.article.service.impl;
 
+import com.news.article.service.transaction.ArticleTransactionService;
 import com.news.article.repository.ApArticleRepository;
 import com.news.article.service.ArticleFreemarkerService;
 import com.news.common.constants.ArticleConstants;
 import com.news.model.article.dtos.ArticleDto;
 import com.news.model.article.dtos.ArticleHomeDto;
 import com.news.model.article.pojos.ApArticle;
+import com.news.model.article.vos.ArticleDetailVo;
+import com.news.model.common.dtos.ResponseResult;
+import com.news.model.common.enums.AppHttpCodeEnum;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
@@ -26,10 +30,10 @@ import static org.mockito.Mockito.when;
 class ApArticleServiceImplTest {
 
     private final ApArticleRepository repository = mock(ApArticleRepository.class);
-    private final ArticlePersistenceService persistenceService = mock(ArticlePersistenceService.class);
+    private final ArticleTransactionService transactionService = mock(ArticleTransactionService.class);
     private final ArticleFreemarkerService freemarkerService = mock(ArticleFreemarkerService.class);
     private final ApArticleServiceImpl service = new ApArticleServiceImpl(
-            repository, persistenceService, freemarkerService);
+            repository, transactionService, freemarkerService);
 
     @Test
     void mapsLoadMoreToBeforeBoundaryAndCapsPageSize() {
@@ -70,15 +74,42 @@ class ApArticleServiceImplTest {
         dto.setContent("[]");
         ApArticle saved = new ApArticle();
         saved.setId(99L);
-        when(persistenceService.save(dto)).thenReturn(saved);
+        when(transactionService.save(dto)).thenReturn(saved);
 
         service.saveArticle(dto);
 
-        InOrder order = inOrder(persistenceService, freemarkerService);
-        order.verify(persistenceService).save(dto);
+        InOrder order = inOrder(transactionService, freemarkerService);
+        order.verify(transactionService).save(dto);
         order.verify(freemarkerService).buildArticleToMinIO(saved, "[]");
         verify(repository, org.mockito.Mockito.never())
                 .findFeed(any(), any(), any(), any());
         assertNull(dto.getId());
+    }
+
+    @Test
+    void loadsArticleDetailWithCreatorId() {
+        ApArticle article = new ApArticle();
+        article.setId(100L);
+        article.setAuthorId(20L);
+        article.setAuthorName("creator");
+        article.setTitle("title");
+        when(repository.findById(100L)).thenReturn(java.util.Optional.of(article));
+
+        ResponseResult result = service.loadArticleInfo(100L);
+
+        assertEquals(AppHttpCodeEnum.SUCCESS.getCode(), result.getCode());
+        ArticleDetailVo detail = (ArticleDetailVo) result.getData();
+        assertEquals(100L, detail.getArticleId());
+        assertEquals(20, detail.getCreatorId());
+        assertEquals("creator", detail.getAuthorName());
+    }
+
+    @Test
+    void returnsNotFoundForMissingArticleDetail() {
+        when(repository.findById(100L)).thenReturn(java.util.Optional.empty());
+
+        ResponseResult result = service.loadArticleInfo(100L);
+
+        assertEquals(AppHttpCodeEnum.DATA_NOT_EXIST.getCode(), result.getCode());
     }
 }

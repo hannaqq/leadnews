@@ -1,6 +1,5 @@
 package com.news.common.redis;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CachingConfigurerSupport;
 import org.springframework.dao.DataAccessException;
@@ -476,184 +475,73 @@ public class CacheService extends CachingConfigurerSupport {
                 end);
     }
 
-    /**
-     * Get Zset, sort from big to small
-     *
-     * @param key
-     * @param min
-     * @param max
-     * @return
-     */
     public Set<String> zReverseRangeByScore(String key, double min,
                                             double max) {
         return stringRedisTemplate.opsForZSet().reverseRangeByScore(key, min, max);
     }
 
-    /**
-     * Get Zset, sort from big to small
-     *
-     * @param key
-     * @param min
-     * @param max
-     * @return
-     */
     public Set<TypedTuple<String>> zReverseRangeByScoreWithScores(
             String key, double min, double max) {
         return stringRedisTemplate.opsForZSet().reverseRangeByScoreWithScores(key,
                 min, max);
     }
 
-    /**
-     *
-     * @param key
-     * @param min
-     * @param max
-     * @param start
-     * @param end
-     * @return
-     */
     public Set<String> zReverseRangeByScore(String key, double min,
                                             double max, long start, long end) {
         return stringRedisTemplate.opsForZSet().reverseRangeByScore(key, min, max,
                 start, end);
     }
 
-    /**
-     * Get Zset count
-     *
-     * @param key
-     * @param min
-     * @param max
-     * @return
-     */
     public Long zCount(String key, double min, double max) {
         return stringRedisTemplate.opsForZSet().count(key, min, max);
     }
 
-    /**
-     * Get Zset size
-     *
-     * @param key
-     * @return
-     */
     public Long zSize(String key) {
         return stringRedisTemplate.opsForZSet().size(key);
     }
 
-    /**
-     * Get the size of sorted set
-     *
-     * @param key Redis key
-     * @return Size of the sorted set
-     */
     public Long zZCard(String key) {
         return stringRedisTemplate.opsForZSet().zCard(key);
     }
 
-    /**
-     * Get the score of value element in sorted set
-     *
-     * @param key Redis key
-     * @param value Element value
-     * @return Score of the element
-     */
     public Double zScore(String key, Object value) {
         return stringRedisTemplate.opsForZSet().score(key, value);
     }
 
-    /**
-     * Remove members by index range
-     *
-     * @param key Redis key
-     * @param start Start index
-     * @param end End index
-     * @return Number of removed members
-     */
     public Long zRemoveRange(String key, long start, long end) {
         return stringRedisTemplate.opsForZSet().removeRange(key, start, end);
     }
 
-    /**
-     * Remove members by score range
-     *
-     * @param key Redis key
-     * @param min Minimum score
-     * @param max Maximum score
-     * @return Number of removed members
-     */
     public Long zRemoveRangeByScore(String key, double min, double max) {
         return stringRedisTemplate.opsForZSet().removeRangeByScore(key, min, max);
     }
 
-    /**
-     * Union two sorted sets and store result in destination key
-     *
-     * @param key First sorted set key
-     * @param otherKey Second sorted set key
-     * @param destKey Destination key
-     * @return Size of result set
-     */
     public Long zUnionAndStore(String key, String otherKey, String destKey) {
         return stringRedisTemplate.opsForZSet().unionAndStore(key, otherKey, destKey);
     }
 
-    /**
-     *
-     * @param key
-     * @param otherKeys
-     * @param destKey
-     * @return
-     */
     public Long zUnionAndStore(String key, Collection<String> otherKeys,
                                String destKey) {
         return stringRedisTemplate.opsForZSet()
                 .unionAndStore(key, otherKeys, destKey);
     }
 
-    /**
-     * Intersect two sorted sets and store result in destination key
-     *
-     * @param key First sorted set key
-     * @param otherKey Second sorted set key
-     * @param destKey Destination key
-     * @return Size of result set
-     */
     public Long zIntersectAndStore(String key, String otherKey,
                                    String destKey) {
         return stringRedisTemplate.opsForZSet().intersectAndStore(key, otherKey,
                 destKey);
     }
 
-    /**
-     * Intersect multiple sorted sets and store result in destination key
-     *
-     * @param key First sorted set key
-     * @param otherKeys Other sorted set keys
-     * @param destKey Destination key
-     * @return Size of result set
-     */
     public Long zIntersectAndStore(String key, Collection<String> otherKeys,
                                    String destKey) {
         return stringRedisTemplate.opsForZSet().intersectAndStore(key, otherKeys,
                 destKey);
     }
 
-    /**
-     *
-     * @param key
-     * @param options
-     * @return
-     */
     public Cursor<TypedTuple<String>> zScan(String key, ScanOptions options) {
         return stringRedisTemplate.opsForZSet().scan(key, options);
     }
 
-    /**
-     * Scan keys matching pattern (recommended for production use)
-     *
-     * @param patten Key pattern to match
-     * @return Set of matching keys
-     */
     public Set<String> scan(String patten){
         Set<String> keys = stringRedisTemplate.execute((RedisCallback<Set<String>>) connection -> {
             Set<String> result = new HashSet<>();
@@ -668,20 +556,11 @@ public class CacheService extends CachingConfigurerSupport {
         return  keys;
     }
     
-    /**
-     * Batch push to Redis List using Pipeline for improved performance
-     *
-     * @param type Redis List key
-     * @param values Collection of values to push
-     * @return List of pipeline execution results
-     */
     public List<Object> lRightPushPipeline(String type,Collection<String> values){
         List<Object> results = stringRedisTemplate.executePipelined(new RedisCallback<Object>() {
                     public Object doInRedis(RedisConnection connection) throws DataAccessException {
                         StringRedisConnection stringRedisConn = (StringRedisConnection)connection;
-                        // Convert collection to array
                         String[] strings = values.toArray(new String[values.size()]);
-                        // Batch push to Redis List
                         stringRedisConn.rPush(type, strings);
                         return null;
                     }
@@ -689,17 +568,7 @@ public class CacheService extends CachingConfigurerSupport {
         return results;
     }
 
-    /**
-     * Refresh tasks from ZSet to List using Pipeline for batch operations
-     * This method is used in the scheduled task refresh mechanism to migrate
-     * expired tasks from future_* ZSet to topic_* List for execution
-     *
-     * @param future_key Redis ZSet key for future tasks
-     * @param topic_key Redis List key for ready tasks
-     * @param values Collection of task values to migrate
-     * @return List of pipeline execution results
-     */
-    public List<Object> refreshWithPipeline(String future_key,String topic_key,Collection<String> values){
+    public List<Object> refreshWithPipeline(String future_key,String ready_key,Collection<String> values){
 
         List<Object> objects = stringRedisTemplate.executePipelined(new RedisCallback<Object>() {
             @Nullable
@@ -707,9 +576,7 @@ public class CacheService extends CachingConfigurerSupport {
             public Object doInRedis(RedisConnection redisConnection) throws DataAccessException {
                 StringRedisConnection stringRedisConnection = (StringRedisConnection)redisConnection;
                 String[] strings = values.toArray(new String[values.size()]);
-                // Add tasks to List for immediate execution
-                stringRedisConnection.rPush(topic_key,strings);
-                // Remove tasks from ZSet
+                stringRedisConnection.rPush(ready_key,strings);
                 stringRedisConnection.zRem(future_key,strings);
                 return null;
             }
@@ -717,13 +584,6 @@ public class CacheService extends CachingConfigurerSupport {
         return objects;
     }
 
-    /**
-     * Try to acquire distributed lock using Redis SET NX command
-     *
-     * @param name Lock name
-     * @param expire Lock expiration time in milliseconds
-     * @return Lock token if acquired successfully, null otherwise
-     */
     public String tryLock(String name, long expire) {
         name = name + "_lock";
         String token = UUID.randomUUID().toString();

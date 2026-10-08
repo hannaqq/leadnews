@@ -23,6 +23,10 @@ public class AuthorizeFilter implements Ordered, GlobalFilter {
         ServerHttpResponse response = exchange.getResponse();
 
         String path = request.getURI().getPath();
+        if (path.startsWith("/user/api/v1/creator-applications/admin/")) {
+            response.setStatusCode(HttpStatus.FORBIDDEN);
+            return response.setComplete();
+        }
         if(path.equals("/user/api/v1/login/login_auth") || path.equals("/actuator/health")){
             return chain.filter(exchange);
         }
@@ -38,7 +42,7 @@ public class AuthorizeFilter implements Ordered, GlobalFilter {
         try {
             Claims claimsBody = AppJwtUtil.getClaimsBody(token);
             int result = AppJwtUtil.verifyToken(claimsBody);
-            if(result == 1 || result == 2){
+            if(result == 1 || result == 2 || !"app".equals(claimsBody.getAudience())){
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
                 return response.setComplete();
             }

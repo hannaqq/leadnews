@@ -9,15 +9,9 @@ import java.util.Date;
 public class UserSearchDto {
 
     String searchWords;
-    /**
-    * curr page
-    */
     int pageNum;
 
     int pageSize;
-    /**
-    * min time
-    */
     Date minBehotTime;
 
     public int getFromIndex(){

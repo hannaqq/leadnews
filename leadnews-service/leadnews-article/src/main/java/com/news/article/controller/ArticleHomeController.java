@@ -37,8 +37,13 @@ public class ArticleHomeController {
     }
 
     @PostMapping("/load_article_info")
-    public ResponseResult loadArticleInfo(){
-        return null;
+    public ResponseResult loadArticleInfo(@RequestBody ArticleInfoDto dto){
+        return apArticleService.loadArticleInfo(dto == null ? null : dto.getArticleId());
+    }
+
+    @GetMapping("/{articleId}")
+    public ResponseResult getArticleInfo(@PathVariable Long articleId){
+        return apArticleService.loadArticleInfo(articleId);
     }
 
 

@@ -18,12 +18,6 @@ spring:
           default:
             connectTimeout: 20000
             readTimeout: 20000
-    discovery:
-      client:
-        simple:
-          instances:
-            leadnews-article:
-              - uri: http://localhost:51802
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/leadnews_user?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
@@ -33,9 +27,3 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: none
-  kafka:
-    bootstrap-servers: localhost:9092
-    producer:
-      retries: 10
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer

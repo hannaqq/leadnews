@@ -1,16 +1,11 @@
 package com.news.wemedia.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.news.apis.article.IArticleClient;
 import com.news.file.service.FileStorageService;
-import com.news.model.common.dtos.ResponseResult;
 import com.news.model.wemedia.pojos.WmNews;
-import com.news.wemedia.repository.WmChannelRepository;
 import com.news.wemedia.repository.WmNewsRepository;
 import com.news.wemedia.repository.WmSensitiveRepository;
-import com.news.wemedia.repository.WmUserRepository;
 import com.news.wemedia.service.impl.WmNewsAutoScanServiceImpl;
-import com.news.wemedia.service.impl.WemediaPersistenceService;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -25,24 +20,17 @@ import static org.mockito.ArgumentMatchers.any;
 
 class WmNewsAutoScanServiceImplTest {
     private final WmNewsRepository newsRepository = mock(WmNewsRepository.class);
-    private final WemediaPersistenceService persistenceService = mock(WemediaPersistenceService.class);
     private final WmSensitiveRepository sensitiveRepository = mock(WmSensitiveRepository.class);
-    private final IArticleClient articleClient = mock(IArticleClient.class);
-    private final WmChannelRepository channelRepository = mock(WmChannelRepository.class);
-    private final WmUserRepository userRepository = mock(WmUserRepository.class);
     private final FileStorageService storageService = mock(FileStorageService.class);
     private final AwsModerationService moderationService = mock(AwsModerationService.class);
+    private final WmNewsPublishService publishService = mock(WmNewsPublishService.class);
     private final WmNewsAutoScanServiceImpl service = new WmNewsAutoScanServiceImpl(
-            newsRepository, persistenceService, sensitiveRepository, articleClient, channelRepository,
-            userRepository, storageService, moderationService, new ObjectMapper());
+            newsRepository, sensitiveRepository, storageService,
+            moderationService, new ObjectMapper(), publishService);
 
     @Test
     void scansInlineImageBlocksUsingSingularImageType() {
         WmNews news = submittedNews();
-        when(persistenceService.claimNewsForProcessing(10)).thenReturn(true);
-        when(persistenceService.transitionProcessingStatus(
-                10, WmNews.Status.FAIL.getCode(),
-                "AWS Rekognition: image contains explicit/sensitive content")).thenReturn(true);
         when(newsRepository.findById(10)).thenReturn(Optional.of(news));
         when(sensitiveRepository.findAll()).thenReturn(List.of());
         when(storageService.downLoadFile("inline-image")).thenReturn(new byte[]{1});
@@ -53,16 +41,12 @@ class WmNewsAutoScanServiceImplTest {
 
         assertEquals(WmNews.Status.FAIL.getCode(), news.getStatus());
         verify(moderationService).scanImageWithAwsRekognition(any(byte[].class));
-        verify(articleClient, never()).saveArticle(org.mockito.ArgumentMatchers.any());
+        verify(publishService, never()).reviewApproved(any());
     }
 
     @Test
     void sendsNewsToManualReviewWhenImageModerationFails() {
         WmNews news = submittedNews();
-        when(persistenceService.claimNewsForProcessing(10)).thenReturn(true);
-        when(persistenceService.transitionProcessingStatus(
-                10, WmNews.Status.ADMIN_AUTH.getCode(),
-                "image moderation unavailable; manual review required")).thenReturn(true);
         when(newsRepository.findById(10)).thenReturn(Optional.of(news));
         when(sensitiveRepository.findAll()).thenReturn(List.of());
         when(storageService.downLoadFile("inline-image"))
@@ -71,17 +55,13 @@ class WmNewsAutoScanServiceImplTest {
         service.autoScanWmNews(10);
 
         assertEquals(WmNews.Status.ADMIN_AUTH.getCode(), news.getStatus());
-        assertEquals("image moderation unavailable; manual review required", news.getReason());
-        verify(articleClient, never()).saveArticle(org.mockito.ArgumentMatchers.any());
+        assertEquals("automatic review unavailable; manual review required", news.getReason());
+        verify(publishService, never()).reviewApproved(any());
     }
 
     @Test
     void sendsNewsToManualReviewWhenRekognitionCannotDecide() {
         WmNews news = submittedNews();
-        when(persistenceService.claimNewsForProcessing(10)).thenReturn(true);
-        when(persistenceService.transitionProcessingStatus(
-                10, WmNews.Status.ADMIN_AUTH.getCode(),
-                "image moderation unavailable; manual review required")).thenReturn(true);
         when(newsRepository.findById(10)).thenReturn(Optional.of(news));
         when(sensitiveRepository.findAll()).thenReturn(List.of());
         when(storageService.downLoadFile("inline-image")).thenReturn(new byte[]{1});
@@ -91,42 +71,36 @@ class WmNewsAutoScanServiceImplTest {
         service.autoScanWmNews(10);
 
         assertEquals(WmNews.Status.ADMIN_AUTH.getCode(), news.getStatus());
-        verify(articleClient, never()).saveArticle(org.mockito.ArgumentMatchers.any());
+        verify(publishService, never()).reviewApproved(any());
     }
 
     @Test
-    void publishesNewsWhenRekognitionApprovesImage() {
+    void schedulesPublicationWhenRekognitionApprovesImage() {
         WmNews news = submittedNews();
         news.setUserId(20);
         news.setChannelId(30);
         news.setType((short) 1);
-        when(persistenceService.claimNewsForProcessing(10)).thenReturn(true);
         when(newsRepository.findById(10)).thenReturn(Optional.of(news));
         when(sensitiveRepository.findAll()).thenReturn(List.of());
         when(storageService.downLoadFile("inline-image")).thenReturn(new byte[]{1});
         when(moderationService.scanImageWithAwsRekognition(any(byte[].class)))
                 .thenReturn(ModerationResult.APPROVED);
-        when(userRepository.findById(20)).thenReturn(Optional.empty());
-        when(channelRepository.findById(30)).thenReturn(Optional.empty());
-        when(articleClient.saveArticle(any())).thenReturn(new ResponseResult<>(200, 100L));
-        when(persistenceService.completePublishing(10, 100L)).thenReturn(true);
 
         service.autoScanWmNews(10);
 
-        verify(articleClient).saveArticle(any());
-        verify(persistenceService).completePublishing(10, 100L);
-        verify(persistenceService, never()).transitionProcessingStatus(
-                any(Integer.class), any(Short.class), any(String.class));
+        verify(publishService).reviewApproved(news);
     }
 
     @Test
-    void skipsReviewWhenAnotherWorkerAlreadyClaimedTheNews() {
-        when(persistenceService.claimNewsForProcessing(10)).thenReturn(false);
+    void skipsReviewWhenNewsIsNotSubmitted() {
+        WmNews news = submittedNews();
+        news.setStatus(WmNews.Status.PROCESSING.getCode());
+        when(newsRepository.findById(10)).thenReturn(Optional.of(news));
 
         service.autoScanWmNews(10);
 
-        verify(newsRepository, never()).findById(10);
-        verify(articleClient, never()).saveArticle(org.mockito.ArgumentMatchers.any());
+        verify(newsRepository, never()).save(any());
+        verify(publishService, never()).reviewApproved(any());
     }
 
     private static WmNews submittedNews() {

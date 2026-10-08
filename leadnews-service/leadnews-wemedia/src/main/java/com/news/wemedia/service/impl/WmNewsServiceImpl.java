@@ -1,10 +1,10 @@
 package com.news.wemedia.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.news.apis.article.IArticleClient;
 import com.news.common.constants.WemediaConstants;
-import com.news.model.article.dtos.ArticleDto;
 import com.news.model.common.dtos.PageResponseResult;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
@@ -12,17 +12,16 @@ import com.news.model.wemedia.dtos.NewsAuthDto;
 import com.news.model.wemedia.dtos.NewsDto;
 import com.news.model.wemedia.dtos.WmNewsDto;
 import com.news.model.wemedia.dtos.WmNewsPageReqDto;
-import com.news.model.wemedia.pojos.WmChannel;
 import com.news.model.wemedia.pojos.WmNews;
-import com.news.model.wemedia.pojos.WmUser;
 import com.news.utils.thread.WmThreadLocalUtil;
-import com.news.wemedia.repository.WmChannelRepository;
 import com.news.wemedia.repository.WmNewsRepository;
 import com.news.wemedia.repository.WmUserRepository;
+import com.news.wemedia.service.WmNewsAutoScanService;
 import com.news.wemedia.service.WmNewsService;
-import com.news.wemedia.service.WmNewsTaskService;
+import com.news.wemedia.service.transaction.WmNewsTransactionService;
+import com.news.wemedia.service.WmNewsPublishService;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
@@ -39,12 +38,13 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WmNewsServiceImpl implements WmNewsService {
     private final WmNewsRepository newsRepository;
     private final WmUserRepository userRepository;
-    private final WmChannelRepository channelRepository;
-    private final WemediaPersistenceService persistenceService;
-    private final WmNewsTaskService newsTaskService;
+    private final WmNewsTransactionService transactionService;
+    private final WmNewsPublishService publishService;
+    private final WmNewsAutoScanService autoScanService;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final IArticleClient articleClient;
     private final ObjectMapper objectMapper;
@@ -55,7 +55,7 @@ public class WmNewsServiceImpl implements WmNewsService {
         PageRequest request = PageRequest.of(dto.getPage() - 1, dto.getSize(),
                 Sort.by(Sort.Direction.DESC, "publishTime"));
         Page<WmNews> page = newsRepository.findForUser(
-                WmThreadLocalUtil.getUser().getId(), dto.getStatus(), dto.getChannelId(),
+                WmThreadLocalUtil.getUserId(), dto.getStatus(), dto.getChannelId(),
                 StringUtils.trimToNull(dto.getKeyword()), dto.getBeginPubDate(), dto.getEndPubDate(), request);
         ResponseResult result = new PageResponseResult(dto.getPage(), dto.getSize(),
                 Math.toIntExact(page.getTotalElements()));
@@ -68,12 +68,17 @@ public class WmNewsServiceImpl implements WmNewsService {
         if (dto == null || dto.getContent() == null || dto.getStatus() == null || dto.getType() == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
         }
-        List<String> contentImages = extractUrlInfo(dto.getContent());
+        List<String> contentImages;
+        try {
+            contentImages = extractUrlInfo(dto.getContent());
+        } catch (JsonProcessingException exception) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID, "invalid article content");
+        }
         List<String> coverImages = dto.getImages() == null ? new ArrayList<>() : new ArrayList<>(dto.getImages());
 
         WmNews news = new WmNews();
         BeanUtils.copyProperties(dto, news);
-        news.setUserId(WmThreadLocalUtil.getUser().getId());
+        news.setUserId(WmThreadLocalUtil.getUserId());
         news.setCreatedTime(new Date());
         news.setSubmitedTime(new Date());
         news.setEnable((short) 1);
@@ -93,10 +98,8 @@ public class WmNewsServiceImpl implements WmNewsService {
         news.setImages(coverImages.isEmpty() ? null : StringUtils.join(coverImages, ","));
 
         boolean draft = dto.getStatus().equals(WmNews.Status.NORMAL.getCode());
-        if (!draft && dto.getPublishTime() == null) {
-            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID, "publish time is required");
-        }
-        WmNews saved = persistenceService.saveNewsAndRelations(
+        news.setStatus(draft ? WmNews.Status.NORMAL.getCode() : WmNews.Status.SUBMIT.getCode());
+        WmNews saved = transactionService.saveNewsAndRelations(
                 news,
                 news.getUserId(),
                 draft ? List.of() : contentImages,
@@ -104,19 +107,18 @@ public class WmNewsServiceImpl implements WmNewsService {
                 WemediaConstants.WM_CONTENT_REFERENCE,
                 WemediaConstants.WM_COVER_REFERENCE);
         if (!draft) {
-            newsTaskService.addNewsToTask(saved.getId(), saved.getPublishTime());
+            autoScanService.autoScanWmNews(saved.getId());
         }
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
     }
 
     @Override
-    @SneakyThrows
     public ResponseResult downOrUp(WmNewsDto dto) {
         if (dto.getId() == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
         }
         WmNews news = newsRepository.findByIdAndUserId(
-                dto.getId(), WmThreadLocalUtil.getUser().getId()).orElse(null);
+                dto.getId(), WmThreadLocalUtil.getUserId()).orElse(null);
         if (news == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST, "article doesn't exist");
         }
@@ -130,7 +132,7 @@ public class WmNewsServiceImpl implements WmNewsService {
                 Map<String, Object> event = new HashMap<>();
                 event.put("articleId", news.getArticleId());
                 event.put("enable", dto.getEnable());
-                kafkaTemplate.send("wm.news.topic.down.or.up", objectMapper.writeValueAsString(event));
+                publishArticleAvailabilityEvent(news.getArticleId(), event);
             }
         }
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
@@ -161,22 +163,37 @@ public class WmNewsServiceImpl implements WmNewsService {
     @Override
     public ResponseResult authFail(NewsAuthDto dto) {
         WmNews news = newsRepository.findById(dto.getId()).orElseThrow();
+        if (news.getStatus() != WmNews.Status.ADMIN_AUTH.getCode()) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_EXIST, "news has already been reviewed");
+        }
         news.setStatus(WmNews.Status.FAIL.getCode());
         news.setReason(dto.getMsg());
-        return ResponseResult.okResult(newsRepository.save(news));
+        newsRepository.save(news);
+        return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
     }
 
     @Override
     public ResponseResult authPass(NewsAuthDto dto) {
         WmNews news = newsRepository.findById(dto.getId()).orElseThrow();
-        ResponseResult articleResult = saveAppArticle(news);
-        if (!Integer.valueOf(AppHttpCodeEnum.SUCCESS.getCode()).equals(articleResult.getCode())) {
-            throw new IllegalStateException("Failed to save app article");
+        if (news.getStatus() != WmNews.Status.ADMIN_AUTH.getCode()) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_EXIST, "news has already been reviewed");
         }
-        news.setStatus(WmNews.Status.ADMIN_SUCCESS.getCode());
-        news.setReason("auth processed");
-        news.setArticleId((Long) articleResult.getData());
-        return ResponseResult.okResult(newsRepository.save(news));
+        news.setStatus(WmNews.Status.PROCESSING.getCode());
+        news.setReason("manual review processing");
+        newsRepository.save(news);
+        try {
+            publishService.reviewApproved(news);
+            return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
+        } catch (RuntimeException exception) {
+            restoreManualReview(news);
+            return ResponseResult.errorResult(AppHttpCodeEnum.SERVER_ERROR);
+        }
+    }
+
+    private void restoreManualReview(WmNews news) {
+        news.setStatus(WmNews.Status.ADMIN_AUTH.getCode());
+        news.setReason("manual approval could not be completed");
+        newsRepository.save(news);
     }
 
     @Override
@@ -184,7 +201,7 @@ public class WmNewsServiceImpl implements WmNewsService {
         if (id == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
         }
-        Long articleId = persistenceService.deleteNews(id, WmThreadLocalUtil.getUser().getId());
+        Long articleId = transactionService.deleteNews(id, WmThreadLocalUtil.getUserId());
         if (articleId != null) {
             articleClient.delArticle(articleId);
         }
@@ -194,7 +211,7 @@ public class WmNewsServiceImpl implements WmNewsService {
     @Override
     public ResponseResult getOne(Integer id) {
         return ResponseResult.okResult(newsRepository.findByIdAndUserId(
-                id, WmThreadLocalUtil.getUser().getId()).orElse(null));
+                id, WmThreadLocalUtil.getUserId()).orElse(null));
     }
 
     @Override
@@ -209,22 +226,7 @@ public class WmNewsServiceImpl implements WmNewsService {
         return dto;
     }
 
-    private ResponseResult saveAppArticle(WmNews news) {
-        WmUser user = userRepository.findById(news.getUserId()).orElse(null);
-        WmChannel channel = channelRepository.findById(news.getChannelId()).orElse(null);
-        ArticleDto dto = new ArticleDto();
-        BeanUtils.copyProperties(news, dto);
-        dto.setLayout(news.getType());
-        dto.setAuthorId(news.getUserId().longValue());
-        if (user != null) dto.setAuthorName(user.getName());
-        if (channel != null) dto.setChannelName(channel.getName());
-        dto.setId(news.getArticleId());
-        dto.setCreatedTime(new Date());
-        return articleClient.saveArticle(dto);
-    }
-
-    @SneakyThrows
-    private List<String> extractUrlInfo(String content) {
+    private List<String> extractUrlInfo(String content) throws JsonProcessingException {
         List<String> materials = new ArrayList<>();
         List<Map<String, Object>> blocks = objectMapper.readValue(content, new TypeReference<>() {});
         for (Map<String, Object> block : blocks) {
@@ -233,5 +235,19 @@ public class WmNewsServiceImpl implements WmNewsService {
             }
         }
         return materials;
+    }
+
+    private void publishArticleAvailabilityEvent(Long articleId, Map<String, Object> event) {
+        try {
+            String message = objectMapper.writeValueAsString(event);
+            kafkaTemplate.send("wm.news.topic.down.or.up", message)
+                    .whenComplete((result, exception) -> {
+                        if (exception != null) {
+                            log.error("Failed to publish availability event for article {}", articleId, exception);
+                        }
+                    });
+        } catch (JsonProcessingException exception) {
+            log.error("Failed to serialize availability event for article {}", articleId, exception);
+        }
     }
 }

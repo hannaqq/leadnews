@@ -20,9 +20,3 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: none
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: behavior-consumer-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

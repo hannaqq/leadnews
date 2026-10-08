@@ -1,19 +1,17 @@
 package com.news.utils.thread;
 
-import com.news.model.wemedia.pojos.WmUser;
-
 public class WmThreadLocalUtil {
-    private final static ThreadLocal<WmUser> WM_USER_THREAD_LOCAL = new ThreadLocal<>();
+    private static final ThreadLocal<Integer> USER_ID_THREAD_LOCAL = new ThreadLocal<>();
 
-    public static void setUser(WmUser wmUser){
-        WM_USER_THREAD_LOCAL.set(wmUser);
+    public static void setUserId(Integer userId) {
+        USER_ID_THREAD_LOCAL.set(userId);
     }
 
-    public static WmUser getUser(){
-        return WM_USER_THREAD_LOCAL.get();
+    public static Integer getUserId() {
+        return USER_ID_THREAD_LOCAL.get();
     }
 
-    public static void clear(){
-        WM_USER_THREAD_LOCAL.remove();
+    public static void clear() {
+        USER_ID_THREAD_LOCAL.remove();
     }
 }

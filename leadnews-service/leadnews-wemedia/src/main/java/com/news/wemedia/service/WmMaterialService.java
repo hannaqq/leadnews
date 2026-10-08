@@ -2,7 +2,6 @@ package com.news.wemedia.service;
 
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.wemedia.dtos.WmMaterialDto;
-import com.news.model.wemedia.pojos.WmMaterial;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface WmMaterialService {

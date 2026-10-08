@@ -16,5 +16,7 @@ public interface ApArticleService {
 
     public ResponseResult loadArticleBehavior(ArticleInfoDto dto);
 
+    ResponseResult loadArticleInfo(Long articleId);
+
     ApArticle getById(Long id);
 }

@@ -50,7 +50,7 @@ public class WmMaterialServiceImpl implements WmMaterialService {
         }
 
         WmMaterial material = new WmMaterial();
-        material.setUserId(WmThreadLocalUtil.getUser().getId());
+        material.setUserId(WmThreadLocalUtil.getUserId());
         material.setUrl(fileId);
         material.setIsCollection((short) 0);
         material.setType((short) 0);
@@ -63,7 +63,7 @@ public class WmMaterialServiceImpl implements WmMaterialService {
         dto.checkParam();
         PageRequest request = PageRequest.of(dto.getPage() - 1, dto.getSize(),
                 Sort.by(Sort.Direction.DESC, "createdTime"));
-        Integer userId = WmThreadLocalUtil.getUser().getId();
+        Integer userId = WmThreadLocalUtil.getUserId();
         Page<WmMaterial> page = dto.getIsCollection() != null && dto.getIsCollection() == 1
                 ? materialRepository.findByUserIdAndIsCollection(userId, dto.getIsCollection(), request)
                 : materialRepository.findByUserId(userId, request);
@@ -76,7 +76,7 @@ public class WmMaterialServiceImpl implements WmMaterialService {
     @Override
     public ResponseResult delPicture(Integer id) {
         WmMaterial material = materialRepository.findByIdAndUserId(
-                id, WmThreadLocalUtil.getUser().getId()).orElse(null);
+                id, WmThreadLocalUtil.getUserId()).orElse(null);
         if (material == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST);
         }

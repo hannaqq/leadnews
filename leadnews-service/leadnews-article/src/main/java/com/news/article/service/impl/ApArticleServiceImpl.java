@@ -1,6 +1,7 @@
 package com.news.article.service.impl;
 
 import com.news.article.repository.ApArticleRepository;
+import com.news.article.service.transaction.ArticleTransactionService;
 import com.news.article.service.ApArticleService;
 import com.news.article.service.ArticleFreemarkerService;
 import com.news.common.constants.ArticleConstants;
@@ -8,6 +9,7 @@ import com.news.model.article.dtos.ArticleDto;
 import com.news.model.article.dtos.ArticleHomeDto;
 import com.news.model.article.dtos.ArticleInfoDto;
 import com.news.model.article.pojos.ApArticle;
+import com.news.model.article.vos.ArticleDetailVo;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +28,7 @@ public class ApArticleServiceImpl implements ApArticleService {
     private static final int MAX_PAGE_SIZE = 50;
 
     private final ApArticleRepository articleRepository;
-    private final ArticlePersistenceService persistenceService;
+    private final ArticleTransactionService transactionService;
     private final ArticleFreemarkerService articleFreemarkerService;
 
     @Override
@@ -66,20 +68,48 @@ public class ApArticleServiceImpl implements ApArticleService {
         if (dto == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
         }
-        ApArticle article = persistenceService.save(dto);
+        ApArticle article = transactionService.save(dto);
         articleFreemarkerService.buildArticleToMinIO(article, dto.getContent());
         return ResponseResult.okResult(article.getId());
     }
 
     @Override
     public ResponseResult delArticle(Long id) {
-        persistenceService.delete(id);
+        transactionService.delete(id);
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS.getCode());
     }
 
     @Override
     public ResponseResult loadArticleBehavior(ArticleInfoDto dto) {
         return null;
+    }
+
+    @Override
+    public ResponseResult loadArticleInfo(Long articleId) {
+        if (articleId == null || articleId <= 0) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
+        }
+        ApArticle article = articleRepository.findById(articleId).orElse(null);
+        if (article == null) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST);
+        }
+
+        Integer creatorId;
+        try {
+            creatorId = Math.toIntExact(article.getAuthorId());
+        } catch (ArithmeticException | NullPointerException exception) {
+            return ResponseResult.errorResult(
+                    AppHttpCodeEnum.SERVER_ERROR, "article has an invalid creator");
+        }
+
+        ArticleDetailVo detail = new ArticleDetailVo();
+        detail.setArticleId(article.getId());
+        detail.setCreatorId(creatorId);
+        detail.setAuthorName(article.getAuthorName());
+        detail.setTitle(article.getTitle());
+        detail.setStaticUrl(article.getStaticUrl());
+        detail.setPublishTime(article.getPublishTime());
+        return ResponseResult.okResult(detail);
     }
 
     @Override

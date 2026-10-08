@@ -2,12 +2,10 @@ package com.news.search.listener;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import com.news.common.constants.ArticleConstants;
 import com.news.model.search.vos.SearchArticleVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +22,6 @@ public class SyncArticleListener {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = ArticleConstants.ARTICLE_ES_SYNC_TOPIC)
-    @SneakyThrows
     public void onMessage(String message) throws IOException {
         if(StringUtils.isNotBlank(message)){
 

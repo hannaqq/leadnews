@@ -8,13 +8,6 @@ import io.protostuff.runtime.RuntimeSchema;
 
 public class ProtostuffUtil {
 
-    /**
-     * Serialize object to byte array using Protostuff
-     *
-     * @param t Object to serialize
-     * @param <T> Object type
-     * @return Serialized byte array
-     */
     public static <T> byte[] serialize(T t){
         Schema schema = RuntimeSchema.getSchema(t.getClass());
         return ProtostuffIOUtil.toByteArray(t,schema,
@@ -22,14 +15,6 @@ public class ProtostuffUtil {
  
     }
 
-    /**
-     * Deserialize byte array to object using Protostuff
-     *
-     * @param bytes Byte array to deserialize
-     * @param c Target class
-     * @param <T> Object type
-     * @return Deserialized object
-     */
     public static <T> T deserialize(byte []bytes,Class<T> c) {
         T t = null;
         try {
@@ -44,11 +29,6 @@ public class ProtostuffUtil {
         return t;
     }
 
-    /**
-     * Performance comparison between JDK serialization and Protostuff serialization
-     *
-     * @param args Command line arguments
-     */
     public static void main(String[] args) {
         long start =System.currentTimeMillis();
         for (int i = 0; i <1000000 ; i++) {

@@ -4,11 +4,9 @@ import com.news.model.common.dtos.ResponseResult;
 import lombok.RequiredArgsConstructor;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.model.search.dtos.HistorySearchDto;
-import com.news.model.user.pojos.ApUser;
 import com.news.search.pojos.ApUserSearch;
 import com.news.search.service.ApUserSearchService;
 import com.news.utils.thread.AppThreadLocalUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -56,13 +54,13 @@ public class ApUserSearchServiceImpl implements ApUserSearchService {
 
     @Override
     public ResponseResult findUserSearch() {
-        ApUser user = AppThreadLocalUtil.getUser();
-        if(user == null){
+        Integer userId = AppThreadLocalUtil.getUserId();
+        if(userId == null){
             return ResponseResult.errorResult(AppHttpCodeEnum.NEED_LOGIN);
         }
 
         List<ApUserSearch> list = mongoTemplate.find(Query.query(Criteria
-                .where("userId").is(user.getId()))
+                .where("userId").is(userId))
                 .with(Sort.by(Sort.Direction.DESC, "createdTime")), ApUserSearch.class);
 
         return ResponseResult.okResult(list);
@@ -70,8 +68,8 @@ public class ApUserSearchServiceImpl implements ApUserSearchService {
 
     @Override
     public ResponseResult delete(HistorySearchDto dto) {
-        ApUser user = AppThreadLocalUtil.getUser();
-        if(user == null){
+        Integer userId = AppThreadLocalUtil.getUserId();
+        if(userId == null){
             return ResponseResult.errorResult(AppHttpCodeEnum.NEED_LOGIN);
         }
 
@@ -80,7 +78,7 @@ public class ApUserSearchServiceImpl implements ApUserSearchService {
         }
 
         mongoTemplate.remove(Query.query(Criteria
-                .where("userId").is(user.getId()
+                .where("userId").is(userId
                 )
                 .and("id").is(dto.getId())),ApUserSearch.class);
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);

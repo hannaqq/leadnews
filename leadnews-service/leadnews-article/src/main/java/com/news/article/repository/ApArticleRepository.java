@@ -10,8 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 public interface ApArticleRepository extends JpaRepository<ApArticle, Long> {
+
+    Optional<ApArticle> findBySourceNewsId(Integer sourceNewsId);
 
     @Query("""
             select article from ApArticle article

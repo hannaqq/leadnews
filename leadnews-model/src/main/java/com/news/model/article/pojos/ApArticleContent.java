@@ -1,8 +1,8 @@
 package com.news.model.article.pojos;
 
-import com.news.model.persistence.SnowflakeId;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
@@ -22,16 +22,13 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 public class ApArticleContent implements Serializable {
 
     @Id
-    @SnowflakeId
-    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 
-    @Column(name = "article_id")
     @JsonSerialize(using = ToStringSerializer.class)
     private Long articleId;
 
     @Lob
-    @Column(name = "content")
     private String content;
 }

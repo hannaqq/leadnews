@@ -6,12 +6,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.io.Serializable;
 import java.util.Date;
 
-/**
- * <p>
- * App user search history.
- * </p>
- * @author itheima
- */
 @Data
 @Document("ap_user_search")
 public class ApUserSearch implements Serializable {

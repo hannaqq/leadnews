@@ -12,6 +12,10 @@ public class AppJwtUtil {
     private static final int REFRESH_TIME = 300;
 
     public static String getToken(Long id){
+        return getToken(id, "app");
+    }
+
+    public static String getToken(Long id, String audience){
         Map<String, Object> claimMaps = new HashMap<>();
         claimMaps.put("id",id);
         long currentTime = System.currentTimeMillis();
@@ -20,7 +24,7 @@ public class AppJwtUtil {
                 .setIssuedAt(new Date(currentTime))
                 .setSubject("system")
                 .setIssuer("news")
-                .setAudience("app")
+                .setAudience(audience)
                 .compressWith(CompressionCodecs.GZIP)
                 .signWith(SignatureAlgorithm.HS512, generalKey())
                 .setExpiration(new Date(currentTime + TOKEN_TIME_OUT * 1000))
@@ -71,8 +75,7 @@ public class AppJwtUtil {
 
     public static SecretKey generalKey() {
         byte[] encodedKey = Base64.getEncoder().encode(TOKEN_ENCRY_KEY.getBytes());
-        SecretKey key = new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
-        return key;
+        return new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
     }
 
     public static void main(String[] args) {

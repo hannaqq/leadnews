@@ -5,6 +5,7 @@ import com.news.model.admin.dtos.AdUserDto;
 import com.news.model.admin.pojos.AdUser;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
+import com.news.utils.common.AppJwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.DigestUtils;
 
@@ -35,6 +36,7 @@ class AdUserServiceImplTest {
         assertEquals(AppHttpCodeEnum.SUCCESS.getCode(), response.getCode());
         Map<?, ?> data = (Map<?, ?>) response.getData();
         assertNotNull(data.get("token"));
+        assertEquals("admin", AppJwtUtil.getClaimsBody((String) data.get("token")).getAudience());
         AdUser returnedUser = (AdUser) data.get("user");
         assertEquals("", returnedUser.getPassword());
         assertEquals("", returnedUser.getSalt());
@@ -53,11 +55,10 @@ class AdUserServiceImplTest {
     }
 
     @Test
-    void keepsAnonymousLoginBehaviorForBlankCredentials() {
+    void rejectsBlankCredentials() {
         ResponseResult<?> response = service.login(new AdUserDto());
 
-        assertEquals(AppHttpCodeEnum.SUCCESS.getCode(), response.getCode());
-        assertNotNull(((Map<?, ?>) response.getData()).get("token"));
+        assertEquals(AppHttpCodeEnum.PARAM_INVALID.getCode(), response.getCode());
         verifyNoInteractions(repository);
     }
 

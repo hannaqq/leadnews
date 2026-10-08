@@ -5,7 +5,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -21,19 +20,6 @@ public interface WmNewsRepository extends JpaRepository<WmNews, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select n from WmNews n where n.id = :id and n.userId = :userId")
     Optional<WmNews> findByIdAndUserIdForUpdate(@Param("id") Integer id, @Param("userId") Integer userId);
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update WmNews n set n.status = :nextStatus, n.reason = :reason " +
-            "where n.id = :id and n.status = :currentStatus")
-    int transitionStatus(@Param("id") Integer id, @Param("currentStatus") Short currentStatus,
-                         @Param("nextStatus") Short nextStatus, @Param("reason") String reason);
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update WmNews n set n.status = :nextStatus, n.reason = :reason, n.articleId = :articleId " +
-            "where n.id = :id and n.status = :currentStatus")
-    int completePublishing(@Param("id") Integer id, @Param("currentStatus") Short currentStatus,
-                           @Param("nextStatus") Short nextStatus, @Param("reason") String reason,
-                           @Param("articleId") Long articleId);
 
     @Query("""
             select n from WmNews n

@@ -1,6 +1,5 @@
 package com.news.user.interceptor;
 
-import com.news.model.user.pojos.ApUser;
 import com.news.utils.thread.AppThreadLocalUtil;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -12,9 +11,7 @@ public class ApTokenInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String userId = request.getHeader("userId");
         if(userId !=null){
-            ApUser apUser = new ApUser();
-            apUser.setId(Integer.valueOf(userId));
-            AppThreadLocalUtil.setUser(apUser);
+            AppThreadLocalUtil.setUserId(Integer.valueOf(userId));
         }
         return true;
     }

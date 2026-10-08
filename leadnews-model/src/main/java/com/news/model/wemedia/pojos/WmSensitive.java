@@ -19,13 +19,10 @@ public class WmSensitive implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Integer id;
 
-    @Column(name = "sensitives")
     private String sensitives;
 
-    @Column(name = "created_time")
     private Date createdTime;
 
 }

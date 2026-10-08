@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.wemedia.pojos.WmChannel;
 import com.news.wemedia.service.WmChannelService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

@@ -3,12 +3,9 @@ package com.news.article.feign;
 import lombok.RequiredArgsConstructor;
 import com.news.apis.article.IArticleClient;
 import com.news.article.service.ApArticleService;
-import com.news.article.service.ApAuthorService;
 import com.news.model.article.dtos.ArticleDto;
 import com.news.model.article.pojos.ApArticle;
-import com.news.model.article.pojos.ApAuthor;
 import com.news.model.common.dtos.ResponseResult;
-import com.news.model.common.enums.AppHttpCodeEnum;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,8 +13,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class ArticleClient implements IArticleClient {
     private final ApArticleService apArticleService;
-
-    private final ApAuthorService apAuthorService;
 
     @PostMapping("/save")
     @Override
@@ -36,19 +31,5 @@ public class ArticleClient implements IArticleClient {
 
         return apArticleService.getById(id);
     }
-
-    @PostMapping("/apAuthor/save")
-    public ResponseResult saveApAuthor(ApAuthor apAuthor) {
-        apAuthorService.save(apAuthor);
-        return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
-    }
-
-    @GetMapping("/apAuthor/getOne/{id}")
-    public ApAuthor getByUserId(@PathVariable Integer id){
-        return apAuthorService.findByUserId(id);
-
-    }
-
-
 
 }

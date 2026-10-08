@@ -4,7 +4,6 @@ import com.news.model.common.dtos.ResponseResult;
 import com.news.model.wemedia.dtos.NewsAuthDto;
 import com.news.model.wemedia.dtos.WmNewsDto;
 import com.news.model.wemedia.dtos.WmNewsPageReqDto;
-import com.news.model.wemedia.pojos.WmNews;
 
 public interface WmNewsService {
     public ResponseResult getList(WmNewsPageReqDto dto);
