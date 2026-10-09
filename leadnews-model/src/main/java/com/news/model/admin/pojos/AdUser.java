@@ -29,8 +29,6 @@ public class AdUser implements Serializable {
 
     private String password;
 
-    private String salt;
-
     @Column(name = "nickname")
     private String nickName;
 

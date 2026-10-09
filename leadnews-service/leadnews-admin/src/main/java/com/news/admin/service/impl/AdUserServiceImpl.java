@@ -10,8 +10,8 @@ import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.utils.common.AppJwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +21,7 @@ import java.util.Map;
 public class AdUserServiceImpl implements AdUserService {
 
     private final AdUserRepository adUserRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public ResponseResult login(AdUserDto dto) {
@@ -31,17 +32,13 @@ public class AdUserServiceImpl implements AdUserService {
         if(adUser == null){
             return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST);
         }
-        String salt = adUser.getSalt();
-        String password = dto.getPassword();
-        String pwd = DigestUtils.md5DigestAsHex((password + salt).getBytes());
-        if(!pwd.equals(adUser.getPassword())){
+        if(!passwordEncoder.matches(dto.getPassword(), adUser.getPassword())){
             return ResponseResult.errorResult(AppHttpCodeEnum.LOGIN_PASSWORD_ERROR);
         }
         String token = AppJwtUtil.getToken(adUser.getId().longValue(), "admin");
         Map<String,Object> map = new HashMap<>();
         map.put("token", token);
         adUser.setPassword("");
-        adUser.setSalt("");
         map.put("user", adUser);
         return ResponseResult.okResult(map);
     }

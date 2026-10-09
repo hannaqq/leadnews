@@ -7,9 +7,9 @@ import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.utils.common.AppJwtUtil;
 import org.junit.jupiter.api.Test;
-import org.springframework.util.DigestUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,12 +23,13 @@ import static org.mockito.Mockito.when;
 class AdUserServiceImplTest {
 
     private final AdUserRepository repository = mock(AdUserRepository.class);
-    private final AdUserServiceImpl service = new AdUserServiceImpl(repository);
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
+    private final AdUserServiceImpl service = new AdUserServiceImpl(repository, passwordEncoder);
 
     @Test
     void returnsSanitizedUserAndTokenForValidCredentials() {
         AdUserDto dto = credentials("admin", "secret");
-        AdUser user = user("admin", "secret", "salt");
+        AdUser user = user("admin", "secret");
         when(repository.findByName("admin")).thenReturn(Optional.of(user));
 
         ResponseResult<?> response = service.login(dto);
@@ -39,7 +40,6 @@ class AdUserServiceImplTest {
         assertEquals("admin", AppJwtUtil.getClaimsBody((String) data.get("token")).getAudience());
         AdUser returnedUser = (AdUser) data.get("user");
         assertEquals("", returnedUser.getPassword());
-        assertEquals("", returnedUser.getSalt());
         verify(repository).findByName("admin");
     }
 
@@ -47,7 +47,7 @@ class AdUserServiceImplTest {
     void rejectsInvalidPassword() {
         AdUserDto dto = credentials("admin", "wrong");
         when(repository.findByName("admin"))
-                .thenReturn(Optional.of(user("admin", "secret", "salt")));
+                .thenReturn(Optional.of(user("admin", "secret")));
 
         ResponseResult<?> response = service.login(dto);
 
@@ -69,13 +69,11 @@ class AdUserServiceImplTest {
         return dto;
     }
 
-    private static AdUser user(String name, String password, String salt) {
+    private AdUser user(String name, String password) {
         AdUser user = new AdUser();
         user.setId(1);
         user.setName(name);
-        user.setSalt(salt);
-        user.setPassword(DigestUtils.md5DigestAsHex(
-                (password + salt).getBytes(StandardCharsets.UTF_8)));
+        user.setPassword(passwordEncoder.encode(password));
         return user;
     }
 }

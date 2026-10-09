@@ -35,7 +35,6 @@ public class WemediaClient implements IWemediaClient {
         wmUser.setApUserId(dto.getApUserId());
         wmUser.setName(dto.getName());
         wmUser.setPassword(dto.getPassword());
-        wmUser.setSalt(dto.getSalt());
         wmUser.setPhone(dto.getPhone());
         wmUser.setImage(dto.getImage());
         wmUser.setNickname(dto.getNickname());

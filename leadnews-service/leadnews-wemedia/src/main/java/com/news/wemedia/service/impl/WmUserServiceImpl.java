@@ -10,16 +10,16 @@ import com.news.wemedia.service.WmUserService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
 public class WmUserServiceImpl implements WmUserService {
     private final WmUserRepository repository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public ResponseResult login(WmLoginDto dto) {
@@ -30,14 +30,11 @@ public class WmUserServiceImpl implements WmUserService {
         if (user == null) {
             return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST);
         }
-        String password = DigestUtils.md5DigestAsHex(
-                (dto.getPassword() + user.getSalt()).getBytes(StandardCharsets.UTF_8));
-        if (!password.equals(user.getPassword())) {
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             return ResponseResult.errorResult(AppHttpCodeEnum.LOGIN_PASSWORD_ERROR);
         }
         HashMap<String, Object> data = new HashMap<>();
         data.put("token", AppJwtUtil.getToken(user.getId().longValue(), "wemedia"));
-        user.setSalt("");
         user.setPassword("");
         data.put("user", user);
         return ResponseResult.okResult(data);

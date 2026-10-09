@@ -16,7 +16,6 @@ public class ApUser implements Serializable {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    private String salt;
     private String name;
     private String password;
     private String phone;

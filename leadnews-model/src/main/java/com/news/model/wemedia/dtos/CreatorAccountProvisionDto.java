@@ -8,7 +8,6 @@ public class CreatorAccountProvisionDto {
     private Integer apUserId;
     private String name;
     private String password;
-    private String salt;
     private String phone;
     private String image;
     private String nickname;

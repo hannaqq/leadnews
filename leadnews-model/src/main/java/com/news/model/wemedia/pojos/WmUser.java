@@ -30,8 +30,6 @@ public class WmUser implements Serializable {
 
     private String password;
 
-    private String salt;
-
     private String nickname;
 
     private String image;

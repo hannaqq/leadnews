@@ -6,9 +6,9 @@ import com.news.model.user.dtos.LoginDto;
 import com.news.model.user.pojos.ApUser;
 import com.news.user.repository.ApUserRepository;
 import org.junit.jupiter.api.Test;
-import org.springframework.util.DigestUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,12 +22,13 @@ import static org.mockito.Mockito.when;
 class ApUserServiceImplTest {
 
     private final ApUserRepository repository = mock(ApUserRepository.class);
-    private final ApUserServiceImpl service = new ApUserServiceImpl(repository);
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
+    private final ApUserServiceImpl service = new ApUserServiceImpl(repository, passwordEncoder);
 
     @Test
     void returnsSanitizedUserAndTokenForValidCredentials() {
         LoginDto dto = credentials("13000000000", "secret");
-        ApUser user = user("13000000000", "secret", "salt");
+        ApUser user = user("13000000000", "secret");
         when(repository.findByPhone(dto.getPhone())).thenReturn(Optional.of(user));
 
         ResponseResult<?> response = service.login(dto);
@@ -37,7 +38,6 @@ class ApUserServiceImplTest {
         assertNotNull(data.get("token"));
         ApUser returnedUser = (ApUser) data.get("user");
         assertEquals("", returnedUser.getPassword());
-        assertEquals("", returnedUser.getSalt());
         verify(repository).findByPhone(dto.getPhone());
     }
 
@@ -45,7 +45,7 @@ class ApUserServiceImplTest {
     void rejectsInvalidPassword() {
         LoginDto dto = credentials("13000000000", "wrong");
         when(repository.findByPhone(dto.getPhone()))
-                .thenReturn(Optional.of(user(dto.getPhone(), "secret", "salt")));
+                .thenReturn(Optional.of(user(dto.getPhone(), "secret")));
 
         ResponseResult<?> response = service.login(dto);
 
@@ -68,13 +68,11 @@ class ApUserServiceImplTest {
         return dto;
     }
 
-    private static ApUser user(String phone, String password, String salt) {
+    private ApUser user(String phone, String password) {
         ApUser user = new ApUser();
         user.setId(1);
         user.setPhone(phone);
-        user.setSalt(salt);
-        user.setPassword(DigestUtils.md5DigestAsHex(
-                (password + salt).getBytes(StandardCharsets.UTF_8)));
+        user.setPassword(passwordEncoder.encode(password));
         return user;
     }
 }

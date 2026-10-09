@@ -19,13 +19,11 @@ class AdUserRepositoryTest {
         AdUser user = new AdUser();
         user.setName("admin");
         user.setPassword("hash");
-        user.setSalt("salt");
         repository.saveAndFlush(user);
 
         AdUser result = repository.findByName("admin").orElseThrow();
 
         assertTrue(result.getId() > 0);
         assertEquals("hash", result.getPassword());
-        assertEquals("salt", result.getSalt());
     }
 }

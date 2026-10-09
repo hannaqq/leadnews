@@ -5,9 +5,12 @@ import com.news.wemedia.repository.WmUserRepository;
 import com.news.wemedia.service.impl.WmUserServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -15,7 +18,23 @@ import static org.mockito.Mockito.when;
 
 class WmUserServiceImplTest {
     private final WmUserRepository repository = mock(WmUserRepository.class);
-    private final WmUserServiceImpl service = new WmUserServiceImpl(repository);
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
+    private final WmUserServiceImpl service = new WmUserServiceImpl(repository, passwordEncoder);
+
+    @Test
+    void acceptsBcryptPassword() {
+        WmUser user = user(10);
+        user.setId(1);
+        user.setName("creator");
+        user.setPassword(passwordEncoder.encode("secret"));
+        when(repository.findByName("creator")).thenReturn(Optional.of(user));
+
+        var credentials = new com.news.model.wemedia.dtos.WmLoginDto();
+        credentials.setName("creator");
+        credentials.setPassword("secret");
+
+        assertEquals(200, service.login(credentials).getCode());
+    }
 
     @Test
     void returnsExistingAccountWithoutInserting() {

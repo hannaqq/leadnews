@@ -175,7 +175,6 @@ public class CreatorApplicationServiceImpl implements CreatorApplicationService 
         dto.setApUserId(user.getId());
         dto.setName(user.getName());
         dto.setPassword(user.getPassword());
-        dto.setSalt(user.getSalt());
         dto.setPhone(user.getPhone());
         dto.setImage(user.getImage());
         dto.setNickname(application.getDisplayName());

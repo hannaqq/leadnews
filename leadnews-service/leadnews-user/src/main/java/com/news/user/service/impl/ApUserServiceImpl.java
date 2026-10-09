@@ -9,10 +9,9 @@ import com.news.user.service.ApUserService;
 import com.news.utils.common.AppJwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,6 +20,7 @@ import java.util.Map;
 public class ApUserServiceImpl implements ApUserService {
 
     private final ApUserRepository repository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public ResponseResult login(LoginDto dto) {
@@ -29,17 +29,13 @@ public class ApUserServiceImpl implements ApUserService {
             if (dbUser == null) {
                 return ResponseResult.errorResult(AppHttpCodeEnum.DATA_NOT_EXIST, "user doesn't exist");
             }
-            String salt = dbUser.getSalt();
-            String password = dto.getPassword();
-            String pwd = DigestUtils.md5DigestAsHex((password + salt).getBytes(StandardCharsets.UTF_8));
-            if (!pwd.equals(dbUser.getPassword())) {
+            if (!passwordEncoder.matches(dto.getPassword(), dbUser.getPassword())) {
                 return ResponseResult.errorResult(AppHttpCodeEnum.LOGIN_PASSWORD_ERROR);
             }
 
             String token = AppJwtUtil.getToken(dbUser.getId().longValue());
             Map<String, Object> map = new HashMap<>();
             map.put("token", token);
-            dbUser.setSalt("");
             dbUser.setPassword("");
             map.put("user",dbUser);
             return ResponseResult.okResult(map);
