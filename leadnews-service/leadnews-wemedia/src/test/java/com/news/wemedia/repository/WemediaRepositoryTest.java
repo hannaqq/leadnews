@@ -5,6 +5,7 @@ import com.news.model.wemedia.pojos.WmMaterial;
 import com.news.model.wemedia.pojos.WmNews;
 import com.news.model.wemedia.pojos.WmNewsMaterial;
 import com.news.model.wemedia.pojos.WmUser;
+import com.news.wemedia.service.transaction.WmNewsScheduleTransactionService;
 import com.news.wemedia.service.transaction.WmNewsTransactionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,17 +20,19 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
-@Import(WmNewsTransactionService.class)
+@Import({WmNewsTransactionService.class, WmNewsScheduleTransactionService.class})
 class WemediaRepositoryTest {
     @Autowired private WmMaterialRepository materialRepository;
     @Autowired private WmNewsRepository newsRepository;
     @Autowired private WmNewsMaterialRepository relationRepository;
     @Autowired private WmUserRepository userRepository;
     @Autowired private WmNewsTransactionService transactionService;
+    @Autowired private WmNewsScheduleTransactionService scheduleTransactionService;
 
     @Test
     void savesMaterialRelationsInRequestOrder() {
@@ -130,6 +133,44 @@ class WemediaRepositoryTest {
 
         assertThrows(RuntimeException.class, () -> transactionService.saveNewsAndRelations(
                 update, 1, List.of(), List.of(), (short) 0, (short) 1));
+    }
+
+    @Test
+    void dueTaskClaimsMatchingScheduleOnlyOnce() {
+        Date publishTime = new Date(10_000);
+        WmNews scheduled = news();
+        scheduled.setStatus(WmNews.Status.SUCCESS.getCode());
+        scheduled.setPublishTime(publishTime);
+        scheduled.setScheduleVersion(3L);
+        scheduled = newsRepository.saveAndFlush(scheduled);
+
+        assertTrue(scheduleTransactionService.claimPublication(
+                scheduled.getId(), publishTime, 3L).isPresent());
+        assertFalse(scheduleTransactionService.claimPublication(
+                scheduled.getId(), publishTime, 3L).isPresent());
+        assertEquals(
+                WmNews.Status.PUBLISHING.getCode(),
+                newsRepository.findById(scheduled.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    void cancellingScheduleInvalidatesTaskAndKeepsApprovedContent() {
+        WmNews scheduled = news();
+        scheduled.setStatus(WmNews.Status.SUCCESS.getCode());
+        scheduled.setPublishTime(new Date(10_000));
+        scheduled.setScheduleTaskId(88L);
+        scheduled.setScheduleVersion(2L);
+        scheduled = newsRepository.saveAndFlush(scheduled);
+
+        Long taskId = scheduleTransactionService.cancelSchedule(scheduled.getId(), 1);
+
+        WmNews cancelled = newsRepository.findById(scheduled.getId()).orElseThrow();
+        assertEquals(88L, taskId);
+        assertEquals(WmNews.Status.APPROVED_UNSCHEDULED.getCode(), cancelled.getStatus());
+        assertEquals(3L, cancelled.getScheduleVersion());
+        assertEquals(null, cancelled.getScheduleTaskId());
+        assertEquals(null, cancelled.getPublishTime());
+        assertEquals("[]", cancelled.getContent());
     }
 
     private static WmMaterial material(String url) {

@@ -4,11 +4,16 @@ import com.news.model.common.dtos.ResponseResult;
 import com.news.model.wemedia.dtos.NewsAuthDto;
 import com.news.model.wemedia.dtos.WmNewsDto;
 import com.news.model.wemedia.dtos.WmNewsPageReqDto;
+import com.news.model.wemedia.dtos.WmNewsScheduleDto;
 
 public interface WmNewsService {
     public ResponseResult getList(WmNewsPageReqDto dto);
 
     public ResponseResult submit(WmNewsDto dto);
+
+    public ResponseResult reschedule(Integer id, WmNewsScheduleDto dto);
+
+    public ResponseResult cancelSchedule(Integer id);
 
     public ResponseResult downOrUp(WmNewsDto dto);
 

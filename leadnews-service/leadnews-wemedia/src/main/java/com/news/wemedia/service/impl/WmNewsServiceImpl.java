@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.news.apis.article.IArticleClient;
 import com.news.common.constants.WemediaConstants;
+import com.news.common.exception.CustomException;
 import com.news.model.common.dtos.PageResponseResult;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
@@ -12,10 +13,12 @@ import com.news.model.wemedia.dtos.NewsAuthDto;
 import com.news.model.wemedia.dtos.NewsDto;
 import com.news.model.wemedia.dtos.WmNewsDto;
 import com.news.model.wemedia.dtos.WmNewsPageReqDto;
+import com.news.model.wemedia.dtos.WmNewsScheduleDto;
 import com.news.model.wemedia.pojos.WmNews;
 import com.news.utils.thread.WmThreadLocalUtil;
 import com.news.wemedia.repository.WmNewsRepository;
 import com.news.wemedia.repository.WmUserRepository;
+import com.news.wemedia.service.PublicationScheduleException;
 import com.news.wemedia.service.WmNewsAutoScanService;
 import com.news.wemedia.service.WmNewsService;
 import com.news.wemedia.service.transaction.WmNewsTransactionService;
@@ -99,16 +102,47 @@ public class WmNewsServiceImpl implements WmNewsService {
 
         boolean draft = dto.getStatus().equals(WmNews.Status.NORMAL.getCode());
         news.setStatus(draft ? WmNews.Status.NORMAL.getCode() : WmNews.Status.SUBMIT.getCode());
-        WmNews saved = transactionService.saveNewsAndRelations(
+        WmNewsTransactionService.SaveNewsResult saveResult =
+                transactionService.saveNewsAndRelationsWithSchedule(
                 news,
                 news.getUserId(),
                 draft ? List.of() : contentImages,
                 draft ? List.of() : coverImages,
                 WemediaConstants.WM_CONTENT_REFERENCE,
                 WemediaConstants.WM_COVER_REFERENCE);
+        WmNews saved = saveResult.news();
+        publishService.cancelObsoleteTask(saveResult.obsoleteTaskId());
         if (!draft) {
             autoScanService.autoScanWmNews(saved.getId());
         }
+        return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
+    }
+
+    @Override
+    public ResponseResult reschedule(Integer id, WmNewsScheduleDto dto) {
+        if (id == null || dto == null || dto.getPublishTime() == null
+                || !dto.getPublishTime().after(new Date())) {
+            return ResponseResult.errorResult(
+                    AppHttpCodeEnum.PARAM_INVALID, "publish time must be in the future");
+        }
+        try {
+            publishService.reschedule(id, WmThreadLocalUtil.getUserId(), dto.getPublishTime());
+            return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
+        } catch (CustomException exception) {
+            return ResponseResult.errorResult(exception.getAppHttpCodeEnum());
+        } catch (RuntimeException exception) {
+            log.error("Failed to reschedule news {}", id, exception);
+            return ResponseResult.errorResult(
+                    AppHttpCodeEnum.SERVER_ERROR, "failed to create publication schedule");
+        }
+    }
+
+    @Override
+    public ResponseResult cancelSchedule(Integer id) {
+        if (id == null) {
+            return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
+        }
+        publishService.cancelSchedule(id, WmThreadLocalUtil.getUserId());
         return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
     }
 
@@ -184,6 +218,10 @@ public class WmNewsServiceImpl implements WmNewsService {
         try {
             publishService.reviewApproved(news);
             return ResponseResult.okResult(AppHttpCodeEnum.SUCCESS);
+        } catch (PublicationScheduleException exception) {
+            log.error("Approved news {} could not be scheduled", news.getId(), exception);
+            return ResponseResult.errorResult(
+                    AppHttpCodeEnum.SERVER_ERROR, "approved, but publication could not be scheduled");
         } catch (RuntimeException exception) {
             restoreManualReview(news);
             return ResponseResult.errorResult(AppHttpCodeEnum.SERVER_ERROR);

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.TaskTypeEnum;
 import com.news.model.schedule.dtos.Task;
+import com.news.model.wemedia.dtos.NewsPublishTaskPayload;
 import com.news.model.wemedia.pojos.WmNews;
 import com.news.utils.common.ProtostuffUtil;
 import com.news.wemedia.service.WmNewsTaskService;
@@ -32,9 +33,28 @@ public class WmNewsTaskServiceImpl implements WmNewsTaskService {
                 TaskTypeEnum.NEWS_PUBLISH.getPriority());
         if (poll.getCode().equals(200) && poll.getData() != null) {
             Task task = objectMapper.convertValue(poll.getData(), Task.class);
-            WmNews wmNews = ProtostuffUtil.deserialize(task.getParameters(), WmNews.class);
-            publishService.publishScheduled(wmNews.getId(), wmNews.getPublishTime());
+            NewsPublishTaskPayload payload = deserializePayload(task.getParameters());
+            publishService.publishScheduled(
+                    payload.getNewsId(),
+                    payload.getExpectedPublishTime(),
+                    payload.getScheduleVersion());
         }
     }
 
+    private NewsPublishTaskPayload deserializePayload(byte[] parameters) {
+        try {
+            NewsPublishTaskPayload payload =
+                    ProtostuffUtil.deserialize(parameters, NewsPublishTaskPayload.class);
+            if (payload.getNewsId() != null
+                    && payload.getExpectedPublishTime() != null
+                    && payload.getScheduleVersion() != null) {
+                return payload;
+            }
+        } catch (RuntimeException ignored) {
+            // Fall through to the pre-schedule-version payload used by already queued tasks.
+        }
+
+        WmNews legacy = ProtostuffUtil.deserialize(parameters, WmNews.class);
+        return new NewsPublishTaskPayload(legacy.getId(), legacy.getPublishTime(), 0L);
+    }
 }

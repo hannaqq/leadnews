@@ -7,6 +7,7 @@ import com.news.model.common.dtos.ResponseResult;
 import com.news.model.common.enums.AppHttpCodeEnum;
 import com.news.model.common.enums.TaskTypeEnum;
 import com.news.model.schedule.dtos.Task;
+import com.news.model.wemedia.dtos.NewsPublishTaskPayload;
 import com.news.model.wemedia.pojos.WmChannel;
 import com.news.model.wemedia.pojos.WmNews;
 import com.news.model.wemedia.pojos.WmUser;
@@ -14,7 +15,9 @@ import com.news.utils.common.ProtostuffUtil;
 import com.news.wemedia.repository.WmChannelRepository;
 import com.news.wemedia.repository.WmNewsRepository;
 import com.news.wemedia.repository.WmUserRepository;
+import com.news.wemedia.service.PublicationScheduleException;
 import com.news.wemedia.service.WmNewsPublishService;
+import com.news.wemedia.service.transaction.WmNewsScheduleTransactionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -34,6 +37,7 @@ public class WmNewsPublishServiceImpl implements WmNewsPublishService {
     private final WmNewsRepository newsRepository;
     private final WmUserRepository userRepository;
     private final WmChannelRepository channelRepository;
+    private final WmNewsScheduleTransactionService scheduleTransactionService;
 
     @Override
     public void reviewApproved(WmNews news) {
@@ -42,56 +46,77 @@ public class WmNewsPublishServiceImpl implements WmNewsPublishService {
             if (publishTime == null) {
                 news.setPublishTime(new Date());
             }
-            publishFromProcessing(news);
+            publishImmediately(news);
             return;
         }
 
-        WmNews payload = new WmNews();
-        payload.setId(news.getId());
-        payload.setPublishTime(publishTime);
-        addTask(TaskTypeEnum.NEWS_PUBLISH, publishTime, payload);
-        news.setStatus(WmNews.Status.SUCCESS.getCode());
-        news.setReason("approved and waiting for publication");
-        newsRepository.save(news);
+        WmNewsScheduleTransactionService.ScheduleChange change =
+                scheduleTransactionService.prepareApprovedSchedule(news.getId(), publishTime);
+        createAndAttachTask(change);
     }
 
     @Override
-    public void publishScheduled(Integer newsId, Date expectedPublishTime) {
-        WmNews news = newsRepository.findById(newsId).orElse(null);
-        if (news == null
-                || expectedPublishTime == null
-                || news.getStatus() != WmNews.Status.SUCCESS.getCode()
-                || news.getPublishTime() == null
-                || news.getPublishTime().getTime() != expectedPublishTime.getTime()) {
+    public void reschedule(Integer newsId, Integer userId, Date publishTime) {
+        WmNewsScheduleTransactionService.ScheduleChange change =
+                scheduleTransactionService.reschedule(newsId, userId, publishTime);
+        cancelObsoleteTask(change.obsoleteTaskId());
+        createAndAttachTask(change);
+    }
+
+    @Override
+    public void cancelSchedule(Integer newsId, Integer userId) {
+        cancelObsoleteTask(scheduleTransactionService.cancelSchedule(newsId, userId));
+    }
+
+    @Override
+    public void cancelObsoleteTask(Long taskId) {
+        if (taskId == null) {
             return;
         }
         try {
-            publishFromProcessing(news);
+            ResponseResult result = scheduleClient.cancelTask(taskId);
+            if (result == null || !Integer.valueOf(AppHttpCodeEnum.SUCCESS.getCode()).equals(result.getCode())) {
+                log.warn("Schedule service did not confirm cancellation of task {}", taskId);
+            }
         } catch (RuntimeException exception) {
-            log.error("Failed to publish approved news {}", newsId, exception);
-            news.setStatus(WmNews.Status.SUCCESS.getCode());
-            news.setReason("publication failed; waiting to retry");
-            newsRepository.save(news);
-            WmNews payload = new WmNews();
-            payload.setId(newsId);
-            payload.setPublishTime(expectedPublishTime);
-            addTask(
-                    TaskTypeEnum.NEWS_PUBLISH,
-                    new Date(System.currentTimeMillis() + PUBLISH_RETRY_DELAY_MILLIS),
-                    payload);
+            log.warn("Failed to remove obsolete schedule task {}", taskId, exception);
         }
     }
 
-    private void publishFromProcessing(WmNews news) {
-        ResponseResult result = articleClient.saveArticle(toArticleDto(news));
-        if (!Integer.valueOf(AppHttpCodeEnum.SUCCESS.getCode()).equals(result.getCode())
-                || !(result.getData() instanceof Number articleId)) {
-            throw new IllegalStateException("failed to save app article");
+    @Override
+    public void publishScheduled(Integer newsId, Date expectedPublishTime, long scheduleVersion) {
+        WmNews news = scheduleTransactionService.claimPublication(
+                newsId, expectedPublishTime, scheduleVersion).orElse(null);
+        if (news == null) {
+            return;
         }
-        news.setArticleId(articleId.longValue());
+        try {
+            long articleId = saveArticle(news);
+            scheduleTransactionService.completePublication(newsId, scheduleVersion, articleId);
+        } catch (RuntimeException exception) {
+            log.error("Failed to publish approved news {}", newsId, exception);
+            if (scheduleTransactionService.restoreWaitingForRetry(newsId, scheduleVersion)) {
+                createAndAttachRetryTask(newsId, expectedPublishTime, scheduleVersion);
+            }
+        }
+    }
+
+    private void publishImmediately(WmNews news) {
+        long articleId = saveArticle(news);
+        news.setArticleId(articleId);
         news.setStatus(WmNews.Status.PUBLISHED.getCode());
         news.setReason("processed");
         newsRepository.save(news);
+    }
+
+    private long saveArticle(WmNews news) {
+        ResponseResult result = articleClient.saveArticle(toArticleDto(news));
+        if (result == null
+                || !Integer.valueOf(AppHttpCodeEnum.SUCCESS.getCode()).equals(result.getCode())
+                || !(result.getData() instanceof Number articleId)) {
+            throw new IllegalStateException("failed to save app article");
+        }
+        return articleId.longValue();
     }
 
     private ArticleDto toArticleDto(WmNews news) {
@@ -114,16 +139,55 @@ public class WmNewsPublishServiceImpl implements WmNewsPublishService {
         return dto;
     }
 
-    private void addTask(TaskTypeEnum type, Date executeTime, WmNews payload) {
+    private void createAndAttachTask(WmNewsScheduleTransactionService.ScheduleChange change) {
+        try {
+            long taskId = addTask(
+                    change.publishTime(),
+                    new NewsPublishTaskPayload(
+                            change.newsId(), change.publishTime(), change.scheduleVersion()));
+            if (!scheduleTransactionService.attachTask(
+                    change.newsId(), change.scheduleVersion(), taskId)) {
+                cancelObsoleteTask(taskId);
+                throw new PublicationScheduleException("schedule changed while task was being created");
+            }
+        } catch (RuntimeException exception) {
+            scheduleTransactionService.markScheduleCreationFailed(
+                    change.newsId(), change.scheduleVersion());
+            if (exception instanceof PublicationScheduleException scheduleException) {
+                throw scheduleException;
+            }
+            throw new PublicationScheduleException("failed to create publication task", exception);
+        }
+    }
+
+    private void createAndAttachRetryTask(
+            Integer newsId, Date expectedPublishTime, long scheduleVersion) {
+        try {
+            long taskId = addTask(
+                    new Date(System.currentTimeMillis() + PUBLISH_RETRY_DELAY_MILLIS),
+                    new NewsPublishTaskPayload(newsId, expectedPublishTime, scheduleVersion));
+            if (!scheduleTransactionService.attachTask(newsId, scheduleVersion, taskId)) {
+                cancelObsoleteTask(taskId);
+            }
+        } catch (RuntimeException exception) {
+            scheduleTransactionService.markScheduleCreationFailed(newsId, scheduleVersion);
+            log.error("Failed to schedule publication retry for news {}", newsId, exception);
+        }
+    }
+
+    private long addTask(Date executeTime, NewsPublishTaskPayload payload) {
         Task task = new Task();
         task.setExecuteTime(executeTime.getTime());
-        task.setTaskType(type.getTaskType());
-        task.setPriority(type.getPriority());
+        task.setTaskType(TaskTypeEnum.NEWS_PUBLISH.getTaskType());
+        task.setPriority(TaskTypeEnum.NEWS_PUBLISH.getPriority());
         task.setParameters(ProtostuffUtil.serialize(payload));
 
         ResponseResult result = scheduleClient.addTask(task);
-        if (result == null || !Integer.valueOf(AppHttpCodeEnum.SUCCESS.getCode()).equals(result.getCode())) {
-            throw new IllegalStateException("failed to schedule " + type.getDesc());
+        if (result == null
+                || !Integer.valueOf(AppHttpCodeEnum.SUCCESS.getCode()).equals(result.getCode())
+                || !(result.getData() instanceof Number taskId)) {
+            throw new IllegalStateException("failed to schedule publication");
         }
+        return taskId.longValue();
     }
 }

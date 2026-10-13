@@ -33,6 +33,9 @@ public class WmNews implements Serializable {
     private Date publishTime;
     @JsonSerialize(using = ToStringSerializer.class)
     private Long articleId;
+    @JsonSerialize(using = ToStringSerializer.class)
+    private Long scheduleTaskId;
+    private Long scheduleVersion = 0L;
     private String images;
     private Short enable;
 
@@ -50,6 +53,8 @@ public class WmNews implements Serializable {
      * 1: Submitted (pending review)
      * 2: Review failed
      * 3: Manual review
+     * 4: Review passed without a publication schedule
+     * 5: Publication in progress
      * 7: Review or publication in progress
      * 8: Review passed (pending publish)
      * 9: Published
@@ -59,6 +64,7 @@ public class WmNews implements Serializable {
 
     public enum Status{
         NORMAL((short)0),SUBMIT((short)1),FAIL((short)2),ADMIN_AUTH((short)3),
+        APPROVED_UNSCHEDULED((short)4),PUBLISHING((short)5),
         PROCESSING((short)7),SUCCESS((short)8),PUBLISHED((short)9);
          short code;
          Status(short code){

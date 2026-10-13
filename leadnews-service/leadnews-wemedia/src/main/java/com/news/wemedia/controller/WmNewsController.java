@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import com.news.model.wemedia.dtos.NewsAuthDto;
 import com.news.model.wemedia.dtos.WmNewsDto;
 import com.news.model.wemedia.dtos.WmNewsPageReqDto;
+import com.news.model.wemedia.dtos.WmNewsScheduleDto;
 import com.news.wemedia.service.WmNewsService;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +28,16 @@ public class WmNewsController {
     @PostMapping("/submit")
     public ResponseResult submit(@RequestBody WmNewsDto dto){
         return wmNewsService.submit(dto);
+    }
+
+    @PutMapping("/{id}/schedule")
+    public ResponseResult reschedule(@PathVariable Integer id, @RequestBody WmNewsScheduleDto dto) {
+        return wmNewsService.reschedule(id, dto);
+    }
+
+    @DeleteMapping("/{id}/schedule")
+    public ResponseResult cancelSchedule(@PathVariable Integer id) {
+        return wmNewsService.cancelSchedule(id);
     }
 
     @PostMapping("/down_or_up")

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -20,6 +21,26 @@ public interface WmNewsRepository extends JpaRepository<WmNews, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select n from WmNews n where n.id = :id and n.userId = :userId")
     Optional<WmNews> findByIdAndUserIdForUpdate(@Param("id") Integer id, @Param("userId") Integer userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select n from WmNews n where n.id = :id")
+    Optional<WmNews> findByIdForUpdate(@Param("id") Integer id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update WmNews n
+               set n.status = :publishingStatus,
+                   n.scheduleTaskId = null
+             where n.id = :id
+               and n.status = :scheduledStatus
+               and n.publishTime = :expectedPublishTime
+               and n.scheduleVersion = :scheduleVersion
+            """)
+    int claimScheduledPublication(@Param("id") Integer id,
+                                  @Param("expectedPublishTime") Date expectedPublishTime,
+                                  @Param("scheduleVersion") Long scheduleVersion,
+                                  @Param("scheduledStatus") Short scheduledStatus,
+                                  @Param("publishingStatus") Short publishingStatus);
 
     @Query("""
             select n from WmNews n

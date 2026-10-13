@@ -5,6 +5,7 @@ import com.news.apis.article.IArticleClient;
 import com.news.common.constants.WemediaConstants;
 import com.news.model.wemedia.dtos.NewsAuthDto;
 import com.news.model.wemedia.dtos.WmNewsDto;
+import com.news.model.wemedia.dtos.WmNewsScheduleDto;
 import com.news.model.wemedia.pojos.WmNews;
 import com.news.utils.thread.WmThreadLocalUtil;
 import com.news.wemedia.repository.WmNewsRepository;
@@ -63,15 +64,16 @@ class WmNewsServiceImplTest {
         WmNews saved = new WmNews();
         saved.setId(10);
         saved.setPublishTime(publishTime);
-        when(transactionService.saveNewsAndRelations(
+        when(transactionService.saveNewsAndRelationsWithSchedule(
                 any(WmNews.class), eq(7), anyList(), anyList(),
                 eq(WemediaConstants.WM_CONTENT_REFERENCE),
-                eq(WemediaConstants.WM_COVER_REFERENCE))).thenReturn(saved);
+                eq(WemediaConstants.WM_COVER_REFERENCE))).thenReturn(
+                        new WmNewsTransactionService.SaveNewsResult(saved, null));
 
         service.submit(request);
 
         InOrder order = inOrder(transactionService, autoScanService);
-        order.verify(transactionService).saveNewsAndRelations(
+        order.verify(transactionService).saveNewsAndRelationsWithSchedule(
                 any(WmNews.class), eq(7), anyList(), anyList(),
                 eq(WemediaConstants.WM_CONTENT_REFERENCE),
                 eq(WemediaConstants.WM_COVER_REFERENCE));
@@ -127,20 +129,46 @@ class WmNewsServiceImplTest {
         request.setPublishTime(new Date(10_000));
         WmNews saved = new WmNews();
         saved.setId(10);
-        when(transactionService.saveNewsAndRelations(
+        when(transactionService.saveNewsAndRelationsWithSchedule(
                 any(WmNews.class), eq(7), anyList(), anyList(),
                 eq(WemediaConstants.WM_CONTENT_REFERENCE),
-                eq(WemediaConstants.WM_COVER_REFERENCE))).thenReturn(saved);
+                eq(WemediaConstants.WM_COVER_REFERENCE))).thenReturn(
+                        new WmNewsTransactionService.SaveNewsResult(saved, 55L));
 
         service.submit(request);
 
         ArgumentCaptor<WmNews> incoming = ArgumentCaptor.forClass(WmNews.class);
-        verify(transactionService).saveNewsAndRelations(
+        verify(transactionService).saveNewsAndRelationsWithSchedule(
                 incoming.capture(), eq(7), anyList(), anyList(),
                 eq(WemediaConstants.WM_CONTENT_REFERENCE),
                 eq(WemediaConstants.WM_COVER_REFERENCE));
         assertEquals(WmNews.Status.SUBMIT.getCode(), incoming.getValue().getStatus());
+        verify(publishService).cancelObsoleteTask(55L);
         verify(autoScanService).autoScanWmNews(10);
+    }
+
+    @Test
+    void changingOnlyPublishTimeDoesNotRunModerationAgain() {
+        WmNewsRepository newsRepository = mock(WmNewsRepository.class);
+        WmUserRepository userRepository = mock(WmUserRepository.class);
+        WmNewsTransactionService transactionService = mock(WmNewsTransactionService.class);
+        WmNewsPublishService publishService = mock(WmNewsPublishService.class);
+        WmNewsAutoScanService autoScanService = mock(WmNewsAutoScanService.class);
+        @SuppressWarnings("unchecked")
+        KafkaTemplate<String, String> kafkaTemplate = mock(KafkaTemplate.class);
+        IArticleClient articleClient = mock(IArticleClient.class);
+        WmNewsServiceImpl service = new WmNewsServiceImpl(
+                newsRepository, userRepository, transactionService,
+                publishService, autoScanService, kafkaTemplate, articleClient, new ObjectMapper());
+        WmThreadLocalUtil.setUserId(7);
+        Date newPublishTime = new Date(System.currentTimeMillis() + 60_000);
+        WmNewsScheduleDto request = new WmNewsScheduleDto();
+        request.setPublishTime(newPublishTime);
+
+        service.reschedule(10, request);
+
+        verify(publishService).reschedule(10, 7, newPublishTime);
+        verify(autoScanService, never()).autoScanWmNews(any());
     }
 
     @Test

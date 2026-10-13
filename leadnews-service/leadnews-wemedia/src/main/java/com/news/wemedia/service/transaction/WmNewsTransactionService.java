@@ -28,21 +28,36 @@ public class WmNewsTransactionService {
     @Transactional
     public WmNews saveNewsAndRelations(WmNews incoming, Integer userId, List<String> contentUrls,
                                        List<String> coverUrls, short contentType, short coverType) {
+        return saveNewsAndRelationsWithSchedule(
+                incoming, userId, contentUrls, coverUrls, contentType, coverType).news();
+    }
+
+    @Transactional
+    public SaveNewsResult saveNewsAndRelationsWithSchedule(
+            WmNews incoming, Integer userId, List<String> contentUrls,
+            List<String> coverUrls, short contentType, short coverType) {
         WmNews news;
+        Long obsoleteTaskId = null;
         if (incoming.getId() == null) {
+            incoming.setScheduleVersion(0L);
             news = newsRepository.save(incoming);
         } else {
             news = newsRepository.findByIdAndUserIdForUpdate(incoming.getId(), userId).orElseThrow();
             if (WmNews.Status.PROCESSING.getCode() == news.getStatus()
+                    || WmNews.Status.PUBLISHING.getCode() == news.getStatus()
                     || WmNews.Status.PUBLISHED.getCode() == news.getStatus()) {
                 throw new CustomException(AppHttpCodeEnum.PARAM_INVALID);
             }
-            BeanUtils.copyProperties(incoming, news, "id", "articleId");
+            obsoleteTaskId = news.getScheduleTaskId();
+            news.setScheduleTaskId(null);
+            news.setScheduleVersion(nextScheduleVersion(news));
+            BeanUtils.copyProperties(
+                    incoming, news, "id", "articleId", "scheduleTaskId", "scheduleVersion");
             relationRepository.deleteByNewsId(news.getId());
         }
         saveRelations(news.getId(), userId, contentUrls, contentType);
         saveRelations(news.getId(), userId, coverUrls, coverType);
-        return news;
+        return new SaveNewsResult(news, obsoleteTaskId);
     }
 
     @Transactional
@@ -84,4 +99,10 @@ public class WmNewsTransactionService {
         relationRepository.saveAll(relations);
     }
 
+    private long nextScheduleVersion(WmNews news) {
+        return news.getScheduleVersion() == null ? 1L : news.getScheduleVersion() + 1;
+    }
+
+    public record SaveNewsResult(WmNews news, Long obsoleteTaskId) {
+    }
 }

@@ -11,6 +11,7 @@ import com.news.wemedia.repository.WmNewsRepository;
 import com.news.wemedia.repository.WmSensitiveRepository;
 import com.news.wemedia.service.WmNewsAutoScanService;
 import com.news.wemedia.service.WmNewsPublishService;
+import com.news.wemedia.service.PublicationScheduleException;
 import com.news.wemedia.service.AwsModerationService;
 import com.news.wemedia.service.ModerationResult;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,8 @@ public class WmNewsAutoScanServiceImpl implements WmNewsAutoScanService {
             if(!handleSensitiveScan((String) textAndImages.get("content"),wmNews)) return;
             if(!handleImageScan((List<String>) textAndImages.get("images"),wmNews)) return;
             publishService.reviewApproved(wmNews);
+        } catch (PublicationScheduleException exception) {
+            log.error("Approved news {} could not be scheduled", id, exception);
         } catch (Exception exception) {
             log.error("Automatic review failed for news {}", id, exception);
             updateStatus(wmNews, WmNews.Status.ADMIN_AUTH.getCode(),

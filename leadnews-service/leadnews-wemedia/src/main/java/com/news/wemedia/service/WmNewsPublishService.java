@@ -8,5 +8,11 @@ public interface WmNewsPublishService {
 
     void reviewApproved(WmNews news);
 
-    void publishScheduled(Integer newsId, Date expectedPublishTime);
+    void reschedule(Integer newsId, Integer userId, Date publishTime);
+
+    void cancelSchedule(Integer newsId, Integer userId);
+
+    void cancelObsoleteTask(Long taskId);
+
+    void publishScheduled(Integer newsId, Date expectedPublishTime, long scheduleVersion);
 }
