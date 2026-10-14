@@ -16,6 +16,7 @@ import com.news.utils.thread.AppThreadLocalUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -37,12 +38,6 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
     public ResponseResult search(UserSearchDto userSearchDto) throws IOException {
         if(userSearchDto == null || StringUtils.isBlank(userSearchDto.getSearchWords())){
             return ResponseResult.errorResult(AppHttpCodeEnum.PARAM_INVALID);
-        }
-
-        Integer userId = AppThreadLocalUtil.getUserId();
-
-        if(userId != null && userSearchDto.getFromIndex() == 0){
-            apUserSearchService.recordSearchHistory(userSearchDto.getSearchWords(), userId);
         }
 
         SearchResponse<SearchArticleVo> response = elasticsearchClient.search(s ->s
@@ -85,6 +80,19 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
             list.add(apArticle);
         }
 
+        recordSearchHistory(userSearchDto);
         return ResponseResult.okResult(list);
+    }
+
+    private void recordSearchHistory(UserSearchDto userSearchDto) {
+        Integer userId = AppThreadLocalUtil.getUserId();
+        if (userId == null || userSearchDto.getFromIndex() != 0) {
+            return;
+        }
+        try {
+            apUserSearchService.recordSearchHistory(userSearchDto.getSearchWords(), userId);
+        } catch (DataAccessException exception) {
+            log.warn("Search succeeded, but history could not be recorded for user {}", userId, exception);
+        }
     }
 }
