@@ -1,3 +1,3 @@
-com.news.common.exception.ExceptionCatch
+com.news.common.exception.GlobalExceptionHandler
 com.news.common.OpenApiConfig
 com.news.common.redis.CacheService
