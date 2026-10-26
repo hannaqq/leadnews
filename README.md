@@ -53,13 +53,15 @@ The App, Wemedia, and Admin gateways centrally authenticate requests using JWTs 
 sequenceDiagram
     participant Client
     participant Gateway as API Gateway
-    participant AuthService as User / Wemedia / Admin Service
     participant Consul
+    participant AuthService as User / Wemedia / Admin Service
     participant Interceptor as Interceptor / ThreadLocal
     participant Service as Business Service
     participant Repository
 
     Client->>Gateway: Submit login credentials
+    Gateway->>Consul: Resolve the corresponding domain service
+    Consul-->>Gateway: Return healthy service instance
     Gateway->>AuthService: Forward to the corresponding domain service
     AuthService->>AuthService: Verify password with BCrypt
     AuthService-->>Gateway: Return JWT with user ID, audience, and expiration
