@@ -50,46 +50,54 @@ The system is strictly layered to separate routing, business logic, asynchronous
 The App, Wemedia, and Admin gateways centrally authenticate requests using JWTs with the corresponding `app`, `wemedia`, and `admin` audiences. After validating a token, the gateway replaces any client-provided `userId` header with the authenticated ID before forwarding the request to a downstream service.
 
 ```mermaid
-sequenceDiagram
-    participant Client
-    participant Gateway as API Gateway
-    participant Consul
-    participant AuthService as User / Wemedia / Admin Service
-    participant Interceptor as Interceptor / ThreadLocal
-    participant Service as Business Service
-    participant Repository
+flowchart TB
+    Client([Client])
+    Unauthorized([401 Unauthorized])
+    Consul[(Consul Service Discovery)]
 
-    Client->>Gateway: Submit login credentials
-    Gateway->>Consul: Resolve the corresponding domain service
-    Consul-->>Gateway: Return healthy service instance
-    Gateway->>AuthService: Forward to the corresponding domain service
-    AuthService->>AuthService: Verify password with BCrypt
-    AuthService-->>Gateway: Return JWT with user ID, audience, and expiration
-    Gateway-->>Client: Return login response
+    AppSummary["App Gateway → App-facing services<br/>Same JWT flow · audience: app"]
+    AdminSummary["Admin Gateway → Admin-facing services<br/>Same JWT flow · audience: admin"]
 
-    Client->>Gateway: Request with token header
-    Gateway->>Gateway: Validate signature, expiration, and audience
-    alt Invalid or mismatched JWT
-        Gateway-->>Client: 401 Unauthorized
-    else Valid JWT
-        Gateway->>Gateway: Extract user ID and overwrite userId header
-        Gateway->>Consul: Resolve target service
-        Consul-->>Gateway: Return healthy service instance
-        Gateway->>Interceptor: Forward request with trusted userId
-        Interceptor->>Interceptor: Store user ID in ThreadLocal
-        Interceptor->>Service: Continue request
-        opt Resource-owned operation
-            Service->>Repository: Query by resource ID and authenticated user ID
-            Repository-->>Service: Return owned resource or no result
-        end
-        Service-->>Interceptor: Complete request
-        Interceptor->>Interceptor: Clear ThreadLocal in afterCompletion()
-        Interceptor-->>Gateway: Return response
-        Gateway-->>Client: Return response
+    subgraph WemediaGateway[Wemedia Gateway]
+        GatewayEntry[Request entry]
+        JwtFilter["JWT GlobalFilter<br/>Validate signature + expiration<br/>Require audience: wemedia"]
+        TrustedHeader["Extract JWT user ID<br/>Overwrite userId header"]
+
+        GatewayEntry -->|Protected request with token| JwtFilter
+        JwtFilter -->|Valid JWT| TrustedHeader
     end
+
+    subgraph WemediaService[leadnews-wemedia Service]
+        direction TB
+        Login["POST /login/in<br/>Verify password with BCrypt<br/>Issue JWT with wemedia audience"]
+        subgraph IdentityFlow[Authenticated Request Processing]
+            direction TB
+            PreHandle["WmTokenInterceptor.preHandle()<br/>Read trusted userId header"]
+            Context["WmThreadLocalUtil<br/>Set current Creator ID"]
+            Business["Controller → Service"]
+            Repository["WmNewsRepository<br/>findByIdAndUserId(...) when required"]
+            AfterCompletion["WmTokenInterceptor.afterCompletion()<br/>Clear ThreadLocal"]
+
+            PreHandle --> Context --> Business
+            Business -->|Resource-owned operation| Repository
+            Repository --> AfterCompletion
+            Business -->|Other operation| AfterCompletion
+        end
+    end
+
+    Client --> AppSummary
+    Client --> AdminSummary
+    Client -->|Creator login or protected request| GatewayEntry
+
+    GatewayEntry -->|Public login path bypasses JWT validation| Login
+    JwtFilter -->|Invalid or mismatched JWT| Unauthorized
+    GatewayEntry -.->|Resolve lb://leadnews-wemedia| Consul
+    TrustedHeader -->|Forward request with trusted userId| PreHandle
+    Login -.->|JWT| GatewayEntry
+    GatewayEntry -.->|Login response| Client
 ```
 
-Authentication is handled centrally at the gateways, while downstream services use the propagated identity for ownership checks such as `findByIdAndUserId(...)`.
+The diagram expands the Wemedia path as the concrete example. The App and Admin gateways follow the same authentication and identity-propagation pattern with their own JWT audiences and downstream routes.
 
 ### 2. High-Concurrency Task Scheduler (Redis ZSet + Pipeline)
 Built a hybrid MySQL-Redis scheduling engine. Future tasks are pushed to a Redis `ZSet` (scored by execution time). A distributed cron job fetches expired tasks and migrates them to a Ready `List`. To eliminate network RTT overhead during this migration, **Redis Pipeline** batching was introduced.
