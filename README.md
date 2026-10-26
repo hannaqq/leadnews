@@ -52,8 +52,8 @@ The App, Wemedia, and Admin gateways centrally authenticate requests using JWTs 
 ```mermaid
 sequenceDiagram
     participant Client
-    participant AuthService as User / Wemedia / Admin Service
     participant Gateway as API Gateway
+    participant AuthService as User / Wemedia / Admin Service
     participant Consul
     participant Interceptor as Interceptor / ThreadLocal
     participant Service as Business Service
