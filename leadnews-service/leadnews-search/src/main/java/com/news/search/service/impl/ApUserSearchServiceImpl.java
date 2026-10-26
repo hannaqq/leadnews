@@ -7,6 +7,8 @@ import com.news.model.search.dtos.HistorySearchDto;
 import com.news.search.pojos.ApUserSearch;
 import com.news.search.service.ApUserSearchService;
 import com.news.utils.thread.AppThreadLocalUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -18,6 +20,7 @@ import java.util.Date;
 import java.util.List;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ApUserSearchServiceImpl implements ApUserSearchService {
     private final MongoTemplate mongoTemplate;
@@ -25,31 +28,32 @@ public class ApUserSearchServiceImpl implements ApUserSearchService {
     @Override
     @Async
     public void recordSearchHistory(String keyword, Integer userId) {
-        Query query = Query.query(Criteria.where("userId").is(userId).and("keyword").is(keyword));
-        ApUserSearch apUserSearch = mongoTemplate.findOne(query, ApUserSearch.class);
+        try {
+            Query query = Query.query(Criteria.where("userId").is(userId).and("keyword").is(keyword));
+            ApUserSearch apUserSearch = mongoTemplate.findOne(query, ApUserSearch.class);
 
-        if(apUserSearch != null){
+            if(apUserSearch != null){
+                apUserSearch.setCreatedTime(new Date());
+                mongoTemplate.save(apUserSearch);
+                return;
+            }
+
+            apUserSearch = new ApUserSearch();
+            apUserSearch.setUserId(userId);
+            apUserSearch.setKeyword(keyword);
             apUserSearch.setCreatedTime(new Date());
-            mongoTemplate.save(apUserSearch);
-            return;
+
+            Query query1 = Query.query(Criteria.where("userId").is(userId))
+                    .with(Sort.by(Sort.Direction.DESC, "createdTime"));
+            List<ApUserSearch> list = mongoTemplate.find(query1, ApUserSearch.class);
+            if(list == null || list.size()<10){
+                mongoTemplate.save(apUserSearch);
+            } else {
+                mongoTemplate.findAndReplace(Query.query(Criteria.where("id").is(list.get(list.size()-1).getId())), apUserSearch);
+            }
+        } catch (DataAccessException exception) {
+            log.warn("Search succeeded, but history could not be recorded for user {}", userId, exception);
         }
-
-        apUserSearch = new ApUserSearch();
-        apUserSearch.setUserId(userId);
-        apUserSearch.setKeyword(keyword);
-        apUserSearch.setCreatedTime(new Date());
-
-        Query query1 = Query.query(Criteria.where("userId").is(userId))
-                .with(Sort.by(Sort.Direction.DESC, "createdTime"));
-        List<ApUserSearch> list = mongoTemplate.find(query1, ApUserSearch.class);
-        if(list == null || list.size()<10){
-            mongoTemplate.save(apUserSearch);
-        } else {
-            mongoTemplate.findAndReplace(Query.query(Criteria.where("id").is(list.get(list.size()-1).getId())), apUserSearch);
-
-        }
-
-
     }
 
     @Override
@@ -59,11 +63,15 @@ public class ApUserSearchServiceImpl implements ApUserSearchService {
             return ResponseResult.errorResult(AppHttpCodeEnum.NEED_LOGIN);
         }
 
-        List<ApUserSearch> list = mongoTemplate.find(Query.query(Criteria
-                .where("userId").is(userId))
-                .with(Sort.by(Sort.Direction.DESC, "createdTime")), ApUserSearch.class);
-
-        return ResponseResult.okResult(list);
+        try {
+            List<ApUserSearch> list = mongoTemplate.find(Query.query(Criteria
+                    .where("userId").is(userId))
+                    .with(Sort.by(Sort.Direction.DESC, "createdTime")), ApUserSearch.class);
+            return ResponseResult.okResult(list);
+        } catch (DataAccessException exception) {
+            log.warn("Search history is unavailable for user {}", userId, exception);
+            return ResponseResult.okResult(List.of());
+        }
     }
 
     @Override

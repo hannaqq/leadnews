@@ -13,10 +13,8 @@ import com.news.model.search.vos.SearchArticleVo;
 import com.news.search.service.ApUserSearchService;
 import com.news.search.service.ArticleSearchService;
 import com.news.utils.thread.AppThreadLocalUtil;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -26,7 +24,6 @@ import java.util.stream.Collectors;
 
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class ArticleSearchServiceImpl implements ArticleSearchService {
 
@@ -89,10 +86,6 @@ public class ArticleSearchServiceImpl implements ArticleSearchService {
         if (userId == null || userSearchDto.getFromIndex() != 0) {
             return;
         }
-        try {
-            apUserSearchService.recordSearchHistory(userSearchDto.getSearchWords(), userId);
-        } catch (DataAccessException exception) {
-            log.warn("Search succeeded, but history could not be recorded for user {}", userId, exception);
-        }
+        apUserSearchService.recordSearchHistory(userSearchDto.getSearchWords(), userId);
     }
 }

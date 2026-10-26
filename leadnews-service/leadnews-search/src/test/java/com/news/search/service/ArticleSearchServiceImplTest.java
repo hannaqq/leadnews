@@ -12,7 +12,6 @@ import com.news.search.service.impl.ArticleSearchServiceImpl;
 import com.news.utils.thread.AppThreadLocalUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataAccessResourceFailureException;
 
 import java.util.Date;
 import java.util.List;
@@ -22,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ArticleSearchServiceImplTest {
@@ -39,7 +38,7 @@ class ArticleSearchServiceImplTest {
     }
 
     @Test
-    void returnsSearchResultsWhenMongoHistoryWriteFails() throws Exception {
+    void returnsSearchResultsAndSubmitsHistoryRecording() throws Exception {
         SearchResponse<SearchArticleVo> searchResponse = mock(SearchResponse.class);
         HitsMetadata<SearchArticleVo> hits = mock(HitsMetadata.class);
         when(searchResponse.hits()).thenReturn(hits);
@@ -51,8 +50,6 @@ class ArticleSearchServiceImplTest {
                 .thenReturn(searchResponse);
 
         AppThreadLocalUtil.setUserId(7);
-        doThrow(new DataAccessResourceFailureException("MongoDB unavailable"))
-                .when(userSearchService).recordSearchHistory("kafka", 7);
 
         UserSearchDto dto = new UserSearchDto();
         dto.setSearchWords("kafka");
@@ -65,5 +62,6 @@ class ArticleSearchServiceImplTest {
         assertEquals(200, result.getCode());
         assertInstanceOf(List.class, result.getData());
         assertEquals(0, ((List<?>) result.getData()).size());
+        verify(userSearchService).recordSearchHistory("kafka", 7);
     }
 }

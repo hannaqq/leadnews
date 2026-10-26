@@ -45,7 +45,51 @@ The system is strictly layered to separate routing, business logic, asynchronous
 ## 💎 Under the Hood: Engineering Highlights
 
 
-### 1. High-Concurrency Task Scheduler (Redis ZSet + Pipeline)
+### 1. Centralized Authentication and Trusted Identity Propagation
+
+The App, Wemedia, and Admin gateways centrally authenticate requests using JWTs with the corresponding `app`, `wemedia`, and `admin` audiences. After validating a token, the gateway replaces any client-provided `userId` header with the authenticated ID before forwarding the request to a downstream service.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant AuthService as User / Wemedia / Admin Service
+    participant Gateway as API Gateway
+    participant Consul
+    participant Interceptor as Interceptor / ThreadLocal
+    participant Service as Business Service
+    participant Repository
+
+    Client->>Gateway: Submit login credentials
+    Gateway->>AuthService: Forward to the corresponding domain service
+    AuthService->>AuthService: Verify password with BCrypt
+    AuthService-->>Gateway: Return JWT with user ID, audience, and expiration
+    Gateway-->>Client: Return login response
+
+    Client->>Gateway: Request with token header
+    Gateway->>Gateway: Validate signature, expiration, and audience
+    alt Invalid or mismatched JWT
+        Gateway-->>Client: 401 Unauthorized
+    else Valid JWT
+        Gateway->>Gateway: Extract user ID and overwrite userId header
+        Gateway->>Consul: Resolve target service
+        Consul-->>Gateway: Return healthy service instance
+        Gateway->>Interceptor: Forward request with trusted userId
+        Interceptor->>Interceptor: Store user ID in ThreadLocal
+        Interceptor->>Service: Continue request
+        opt Resource-owned operation
+            Service->>Repository: Query by resource ID and authenticated user ID
+            Repository-->>Service: Return owned resource or no result
+        end
+        Service-->>Interceptor: Complete request
+        Interceptor->>Interceptor: Clear ThreadLocal in afterCompletion()
+        Interceptor-->>Gateway: Return response
+        Gateway-->>Client: Return response
+    end
+```
+
+Authentication is handled centrally at the gateways, while downstream services use the propagated identity for ownership checks such as `findByIdAndUserId(...)`.
+
+### 2. High-Concurrency Task Scheduler (Redis ZSet + Pipeline)
 Built a hybrid MySQL-Redis scheduling engine. Future tasks are pushed to a Redis `ZSet` (scored by execution time). A distributed cron job fetches expired tasks and migrates them to a Ready `List`. To eliminate network RTT overhead during this migration, **Redis Pipeline** batching was introduced.
 
 ```mermaid
@@ -87,10 +131,10 @@ flowchart TB
     style DB fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 ```
 
-### 2. Event-Driven Messaging with Kafka
+### 3. Event-Driven Messaging with Kafka
 Kafka decouples cross-service article updates from the main request flow. Article publication events update the Elasticsearch index, while article up/down events synchronize publication state. User reactions and creator follows are synchronous, transactional operations owned directly by the Behavior service.
 
-### 3. Static Article Generation
+### 4. Static Article Generation
 When an article is published, the Article service renders its content into a static HTML page with Freemarker and stores the generated file in MinIO. Readers can retrieve the pre-rendered page without rebuilding the article view from multiple database records on every request. After generation, the service also publishes a Kafka event to update the Elasticsearch index.
 
 ---
